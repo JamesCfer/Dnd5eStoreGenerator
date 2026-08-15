@@ -1,0 +1,135 @@
+<div class="cfer-store {{#if closed}}is-closed{{/if}}">
+
+  <div class="cfer-store-header">
+    <div class="cfer-store-title">
+      <i class="fa-solid fa-shop"></i>
+      <h2>{{doc.name}}</h2>
+      {{#if editable}}
+        <button type="button" class="cfer-icon-btn" data-action="editField" data-field="name" title="Rename store"><i class="fa-solid fa-pen"></i></button>
+      {{/if}}
+      <span class="cfer-store-type-pill">{{typeLabel}}{{#if store.settlementSize}} · {{store.settlementSize}}{{/if}}{{#if store.wealth}} · {{store.wealth}}{{/if}}</span>
+      {{#if closed}}<span class="cfer-store-closed-pill"><i class="fa-solid fa-door-closed"></i> Closed</span>{{/if}}
+      {{#if priceMulLabel}}<span class="cfer-store-mul-pill" title="Price multiplier">{{priceMulLabel}} prices</span>{{/if}}
+    </div>
+    <div class="cfer-store-header-actions">
+      {{#if editable}}
+        <button type="button" data-action="toggleBrowser" class="{{#if browserOpen}}is-active{{/if}}">
+          <i class="fa-solid fa-book-open"></i> Compendium Stock
+        </button>
+        <button type="button" data-action="restock" title="Add 3 random type-appropriate items from the compendium">
+          <i class="fa-solid fa-boxes-stacked"></i> Restock ×3
+        </button>
+        <button type="button" data-action="shareStore" title="Give players observer access and post a chat link">
+          <i class="fa-solid fa-share-nodes"></i> Share
+        </button>
+        <button type="button" data-action="storeSettings" title="Prices, sell rate, open/closed">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      {{/if}}
+    </div>
+  </div>
+
+  {{#if store.description}}
+    <div class="cfer-store-description">
+      <p>{{store.description}}</p>
+      {{#if editable}}
+        <button type="button" class="cfer-icon-btn" data-action="editField" data-field="description" title="Edit description"><i class="fa-solid fa-pen"></i></button>
+      {{/if}}
+    </div>
+  {{else if editable}}
+    <div class="cfer-store-description cfer-store-description--empty">
+      <button type="button" data-action="editField" data-field="description"><i class="fa-solid fa-pen"></i> Add a description</button>
+    </div>
+  {{/if}}
+
+  {{#if store.owner}}
+    <div class="cfer-store-owner" {{#if editable}}data-action="openOwnerNote" role="button" title="Edit shopkeeper · drop an Actor here to link"{{/if}}>
+      {{#if ownerPortrait}}
+        <img class="cfer-store-owner-portrait" src="{{ownerPortrait}}" alt="{{store.owner.name}}" />
+      {{else}}
+        <i class="fa-solid fa-user-tie"></i>
+      {{/if}}
+      <div class="cfer-store-owner-text">
+        <strong>{{store.owner.name}}</strong>{{#if store.owner.race}} <span class="cfer-muted">— {{store.owner.race}}</span>{{/if}}
+        {{#if store.owner.actorId}}
+          <button type="button" class="cfer-icon-btn" data-action="openOwnerActor" title="Open linked actor"><i class="fa-solid fa-user"></i></button>
+        {{/if}}
+        {{#if store.owner.description}}<p>{{store.owner.description}}</p>{{/if}}
+      </div>
+    </div>
+  {{else if editable}}
+    <div class="cfer-store-owner cfer-store-owner--empty">
+      <button type="button" data-action="openOwnerNote"><i class="fa-solid fa-user-plus"></i> Add a shopkeeper</button>
+      <span class="cfer-drop-hint">…or drop an Actor here</span>
+    </div>
+  {{/if}}
+
+  <div class="cfer-store-main {{#if browserOpen}}has-browser{{/if}}">
+
+    <section class="cfer-store-inventory" aria-label="Store inventory">
+      <div class="cfer-store-inventory-head">
+        <h3><i class="fa-solid fa-shelves"></i> Inventory <span class="cfer-muted">({{itemCount}})</span></h3>
+        <span class="cfer-drop-hint">{{#if editable}}Drag items in to stock · drag rows out to hand over{{else}}Drop your own items here to sell{{/if}}</span>
+      </div>
+
+      {{#if groups.length}}
+        {{#each groups}}
+          <h4 class="cfer-store-group-label">{{this.label}}</h4>
+          <ul class="cfer-store-rows">
+            {{#each this.rows}}
+              <li class="cfer-store-row" draggable="true" data-drag-uuid="{{this.uuid}}" data-uuid="{{this.uuid}}">
+                <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
+                <a class="cfer-store-row-name" data-action="openItem">{{this.name}}</a>
+                <span class="cfer-store-row-level" title="Rarity">{{this.rarity}}</span>
+                {{#if ../../editable}}
+                  <a class="cfer-store-row-price {{#if this.adjusted}}is-adjusted{{/if}}" data-action="editPrice" title="Click to set base price{{#if this.adjusted}} · base {{this.basePrice}}{{/if}}">{{this.displayPrice}}</a>
+                {{else}}
+                  <span class="cfer-store-row-price {{#if this.adjusted}}is-adjusted{{/if}}" {{#if this.adjusted}}title="Adjusted price"{{/if}}>{{this.displayPrice}}</span>
+                {{/if}}
+                <span class="cfer-store-row-qty">
+                  {{#if ../../editable}}<button type="button" class="cfer-icon-btn" data-action="qtyDelta" data-delta="-1" title="Less stock">−</button>{{/if}}
+                  ×{{this.qty}}
+                  {{#if ../../editable}}<button type="button" class="cfer-icon-btn" data-action="qtyDelta" data-delta="1" title="More stock">+</button>{{/if}}
+                </span>
+                {{#if ../../canTrade}}
+                  <button type="button" class="cfer-store-row-buy" data-action="buyItem" title="Buy this item"><i class="fa-solid fa-coins"></i> Buy</button>
+                {{/if}}
+                {{#if ../../editable}}
+                  <button type="button" class="cfer-icon-btn cfer-store-row-remove" data-action="removeItem" title="Remove from store"><i class="fa-solid fa-trash"></i></button>
+                {{/if}}
+              </li>
+            {{/each}}
+          </ul>
+        {{/each}}
+      {{else}}
+        <p class="cfer-store-empty"><em>The shelves are bare.{{#if editable}} Drag items in, or use Compendium Stock / Restock.{{/if}}</em></p>
+      {{/if}}
+    </section>
+
+    {{#if browserOpen}}
+      <aside class="cfer-store-browser" aria-label="Compendium browser">
+        <div class="cfer-store-browser-head">
+          <h3><i class="fa-solid fa-book-open"></i> {{typeLabel}} stock</h3>
+          <span class="cfer-muted">{{browserSource}}</span>
+        </div>
+        <input type="search" data-browser-search placeholder="Search items…" value="{{browserSearch}}" />
+        <ul class="cfer-store-rows cfer-store-browser-rows">
+          {{#each browserRows}}
+            <li class="cfer-store-row" draggable="true" data-drag-uuid="{{this.uuid}}" data-browser-uuid="{{this.uuid}}">
+              <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
+              <span class="cfer-store-row-name">{{this.name}}</span>
+              <span class="cfer-store-row-level">{{this.rarity}}</span>
+              <span class="cfer-store-row-price">{{this.price}}</span>
+              {{#if ../editable}}
+                <button type="button" class="cfer-icon-btn" data-action="addFromBrowser" title="Add to store"><i class="fa-solid fa-plus"></i></button>
+              {{/if}}
+            </li>
+          {{else}}
+            <li class="cfer-store-empty"><em>No matching items.</em></li>
+          {{/each}}
+        </ul>
+      </aside>
+    {{/if}}
+
+  </div>
+</div>

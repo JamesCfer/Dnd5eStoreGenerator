@@ -1,0 +1,273 @@
+<div class="npc-builder-layout">
+
+  <!-- ── Tab strip (Home + this module's builder) ──────────────────────── -->
+  <div class="builder-tabs" role="tablist">
+    <button type="button" class="builder-tab builder-tab--home" data-tab="home"
+            role="tab" id="builder-tab-home" aria-selected="false" aria-controls="builder-tabpanel-home">
+      <i class="fa-solid fa-house"></i> Home
+    </button>
+    <div class="builder-tab-group">
+      <button type="button" class="builder-tab builder-tab--builder" data-tab="builder"
+              role="tab" id="builder-tab-builder" aria-selected="false" aria-controls="builder-tabpanel-builder">
+        <i class="{{module.icon}}"></i> {{module.label}}
+      </button>
+      <a href="{{module.githubUrl}}" target="_blank" rel="noopener noreferrer" class="builder-tab-github" title="View on GitHub" aria-label="View module on GitHub">
+        <i class="fa-brands fa-github"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Home panel (links to all 4 modules) ──────────────────────────── -->
+  <div class="home-panel" style="display:none;" role="tabpanel" id="builder-tabpanel-home" aria-labelledby="builder-tab-home">
+    <div class="home-content">
+      <div class="home-logo">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <h2>CferNpcMaker — {{module.label}}</h2>
+      </div>
+
+      <!-- Getting Started / Instructions -->
+      <div class="home-instructions">
+        <div class="home-instructions-header">
+          <i class="fa-solid fa-circle-info"></i>
+          <h3>Getting Started</h3>
+        </div>
+        <ol class="home-instructions-steps">
+          <li>
+            <strong>Sign in with Patreon.</strong>
+            Click <em>Sign in with Patreon</em> in the builder to authenticate.
+          </li>
+          <li>
+            <strong>Open the <i class="{{module.icon}}"></i> {{module.label}} tab</strong> at the top of this window to reach the form.
+          </li>
+          <li>
+            <strong>Describe your {{documentNoun}}.</strong>
+            Fill in a name, level, and description — the more detail you provide, the better the result.
+          </li>
+          <li>
+            <strong>Click Generate.</strong>
+            Your new {{documentNoun}} is added to Foundry and appears in the history panel on the right.
+          </li>
+        </ol>
+        <p class="home-instructions-tip">
+          <i class="fa-solid fa-lightbulb"></i>
+          Click any past entry in the history panel to re-populate the form and tweak it.
+        </p>
+      </div>
+
+      <p class="home-intro">
+        You're using <strong>{{module.label}}</strong>. The CferNpcMaker family ships
+        a separate Foundry module for each system so each install only contains the
+        code it needs. Install any of the others to round out your toolset.
+      </p>
+
+      <div class="home-modules-grid">
+        {{#each homeModules}}
+        <div class="home-module-card {{accentClass}}{{#if isCurrent}} home-module-card--current{{/if}}">
+          <div class="home-module-icon"><i class="{{icon}}"></i></div>
+          <div class="home-module-body">
+            <div class="home-module-title">{{label}}</div>
+            <div class="home-module-desc">{{description}}</div>
+          </div>
+          <div class="home-module-cta">
+            {{#if isCurrent}}
+              <span class="home-module-current-badge"><i class="fa-solid fa-check"></i> Installed</span>
+            {{else}}
+              <a href="{{install}}" target="_blank" rel="noopener noreferrer" class="home-module-install">
+                <i class="fa-brands fa-github"></i> Install
+              </a>
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+
+      <!-- Custom art style -->
+      <div class="home-art-style">
+        <label for="npc-art-style" class="home-art-style-label">
+          <i class="fa-solid fa-palette"></i>
+          <span>Custom Art Style</span>
+        </label>
+        <input type="text" id="npc-art-style" class="home-art-style-input"
+          placeholder="e.g. watercolor fantasy, anime, oil painting, comic book…" />
+        <span class="home-art-style-hint">
+          Specify an art style for generated NPC images. Leave blank to use the system default.
+        </span>
+      </div>
+
+      <div class="home-links">
+        <a href="https://discord.gg/6AJxmtjZvX" target="_blank" rel="noopener noreferrer" class="btn-discord">
+          <i class="fa-brands fa-discord"></i> Join our Discord
+        </a>
+        <a href="https://www.patreon.com/cw/CelestiaTools" target="_blank" rel="noopener noreferrer" class="btn-patreon-link">
+          <i class="fa-brands fa-patreon"></i> Support on Patreon
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Offline detection banner ────────────────────────────────────── -->
+  <div class="offline-banner" style="display:none;" role="status" aria-live="polite">
+    <i class="fa-solid fa-wifi" aria-hidden="true"></i>
+    <span>No network connection — generation is unavailable until you're back online.</span>
+  </div>
+
+  <!-- ── Main builder content ─────────────────────────────────────────── -->
+  <div class="builder-inner" role="tabpanel" id="builder-tabpanel-builder" aria-labelledby="builder-tab-builder">
+
+    <!-- Left: form panel -->
+    <div class="npc-panel-form">
+
+      <!-- Auth banner -->
+      <div class="auth-banner">
+        <div class="auth-unsigned">
+          <div class="auth-unsigned-text">
+            <i class="fa-brands fa-patreon auth-patreon-icon"></i>
+            <span>Sign in with Patreon to use this module</span>
+          </div>
+          <div class="auth-unsigned-actions">
+            <button type="button" data-action="signin" class="btn-patreon">
+              <i class="fa-brands fa-patreon"></i> Sign in with Patreon
+            </button>
+            <button type="button" data-action="patreon" class="btn-join">
+              Join Patreon
+            </button>
+          </div>
+        </div>
+        <div class="auth-signed">
+          <div class="auth-signed-status">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Signed in via Patreon</span>
+            <span class="auth-uses-pill" style="display:none;" title="Generation uses remaining this month" aria-live="polite">
+              <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+              <span class="auth-uses-count">—</span>
+            </span>
+          </div>
+          <button type="button" data-action="signout" class="btn-signout">
+            <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Module-specific form -->
+      <form class="npc-form" autocomplete="off">
+
+        <div class="history-selected-banner" style="display:none;">
+          <i class="fa-solid fa-arrow-turn-up fa-rotate-90"></i>
+          <span class="history-selected-label">Editing prompt from <strong></strong> — update fields and Generate to recreate</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field field--name">
+            <label for="npc-name">Store Name</label>
+            <input type="text" id="npc-name" name="name" placeholder="e.g. The Dancing Dragon Emporium" />
+          </div>
+          <div class="field field--level">
+            <label for="store-wealth">Wealth</label>
+            <select id="store-wealth" name="wealth">
+              <option value="poor">Poor</option>
+              <option value="modest" selected>Modest</option>
+              <option value="wealthy">Wealthy</option>
+              <option value="aristocratic">Aristocratic</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="store-type">Store Type</label>
+            <select id="store-type" name="storeType">
+              <option value="general" selected>General Goods</option>
+              <option value="blacksmith">Blacksmith / Weaponsmith</option>
+              <option value="armorer">Armorer</option>
+              <option value="alchemist">Alchemist / Apothecary</option>
+              <option value="magic">Magic Shop</option>
+              <option value="jeweler">Jeweler / Curiosities</option>
+              <option value="fletcher">Fletcher / Bowyer</option>
+              <option value="tavern">Tavern / Inn</option>
+            </select>
+          </div>
+          <div class="field field--level">
+            <label for="store-settlement">Settlement</label>
+            <select id="store-settlement" name="settlementSize">
+              <option value="village">Village</option>
+              <option value="town" selected>Town</option>
+              <option value="city">City</option>
+              <option value="metropolis">Metropolis</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="npc-desc">Description</label>
+          <select class="desc-template-select" aria-label="Load a description template">
+            <option value="">— Quick template… —</option>
+            <option value="A cramped, cluttered general store run by a retired adventurer. Shelves overflow with rope, lanterns, rations, and the occasional oddity picked up on old expeditions. The owner haggles cheerfully and always throws in a story with each sale.">Adventurer's general store</option>
+            <option value="A soot-stained smithy famous for reliable, no-nonsense steel. The dwarven smith takes commissions for masterwork blades and keeps a modest stock of weapons and armor, plus a locked chest of minor magic arms for trusted customers.">Dwarven smithy</option>
+            <option value="A fragrant apothecary whose ceiling drips with drying herbs. The gnome alchemist sells healing potions, antitoxin, alchemist's fire, and a few experimental concoctions of dubious stability. Regulars know to ask what's 'fresh from the still'.">Gnomish apothecary</option>
+            <option value="An incense-heavy shop of arcane curios behind a velvet curtain. Scrolls, wands, and trinkets line glass cases; the elven proprietor identifies magic items for a fee and quietly buys artifacts with no questions asked.">Arcane curio shop</option>
+            <option value="A rowdy dockside tavern doubling as a trading post. Ale, hot meals, and rooms upstairs — plus a back room where the owner fences salvage, maps, and 'imported' goods that fell off a ship.">Dockside tavern</option>
+          </select>
+          <textarea id="npc-desc" name="description" rows="6"
+            placeholder="Describe this store: its look and feel, the shopkeeper, specialty stock, price attitude, rumours…"></textarea>
+          <span class="field-hint">The more detail you provide, the better the AI can match your vision.</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" data-action="generate" class="btn-primary" disabled>
+            <i class="fa-solid fa-shop"></i>
+            <span class="btn-label">Generate Store</span>
+            <span class="btn-cost-badge">7 uses</span>
+          </button>
+          <button type="button" data-action="export" class="btn-secondary" disabled>
+            <i class="fa-solid fa-file-arrow-down"></i>
+            <span>Export JSON</span>
+          </button>
+        </div>
+
+      </form>
+
+      <div class="post-gen-actions">
+        <button type="button" data-action="undolast" class="btn-undo" disabled>
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+          <span>Undo Last Generation</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: history panel -->
+    <div class="npc-panel-history">
+      <div class="history-header">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span class="history-header-label">{{module.historyLabel}}</span>
+        <button type="button" class="history-compact-btn" title="Collapse history panel" aria-pressed="false" aria-label="Toggle compact history panel">
+          <i class="fa-solid fa-angles-right"></i>
+        </button>
+        <button type="button" class="history-clear-btn" data-action="clearhistory" title="Clear all history entries">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+      <div class="history-search">
+        <input type="text" class="history-search-input" placeholder="Filter by name…" aria-label="Filter history by name">
+      </div>
+      <div class="history-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Feedback section ─────────────────────────────────────────────── -->
+  <div class="feedback-section">
+    <div class="feedback-header">
+      <i class="fa-solid fa-comment-dots"></i>
+      <span>Send Feedback</span>
+    </div>
+    <div class="feedback-body">
+      <textarea class="feedback-textarea" placeholder="Found a bug? Have a suggestion? Let us know…" rows="2"></textarea>
+      <button type="button" data-action="sendfeedback" class="feedback-send-btn">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>Send</span>
+      </button>
+    </div>
+    <div class="feedback-status" style="display:none;"></div>
+  </div>
+
+</div>
