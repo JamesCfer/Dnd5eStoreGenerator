@@ -160,6 +160,11 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       cancelOrder:   function(ev) { this._onCancelOrder(ev); },
       fetchWiki:     function()   { this._onFetchWiki(); },
       importWikiRow: function(ev) { this._onImportWikiRow(ev); },
+      addStaff:      function()   { this._onEditStaff(null); },
+      editStaff:     function(ev) { this._onEditStaff(this._staffIdFromEvent(ev)); },
+      removeStaff:   function(ev) { this._onRemoveStaff(ev); },
+      generateStaffActor: function(ev) { this._onGenerateStaffActor(ev); },
+      openStaffActor: function(ev) { this._onOpenStaffActor(ev); },
     },
   };
 
@@ -233,6 +238,11 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const ownerActor = store.owner?.actorId ? game.actors.get(store.owner.actorId) : null;
 
+    const staff = (store.staff || []).map(s => {
+      const actor = s.actorId ? game.actors.get(s.actorId) : null;
+      return { ...s, portrait: actor?.img || null, hasActor: !!actor };
+    });
+
     const orders = (store.orders || []).map(o => ({
       ...o,
       priceLabel: cpLabel(Number(o.priceCp) || 0),
@@ -253,6 +263,8 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       priceMulLabel:  Number(store.priceMultiplier) && Number(store.priceMultiplier) !== 1
                         ? `×${Number(store.priceMultiplier)}` : '',
       ownerPortrait:  ownerActor?.img || null,
+      staff,
+      npcMakerActive: !!game.modules.get('DnD5eNpcMaker')?.active,
       orders,
       orderFee:       orderFeePct(store),
       browserOpen:    this.browserOpen,
@@ -400,6 +412,25 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       ownerCard.addEventListener('dragover', ev => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'link'; });
       ownerCard.addEventListener('drop', ev => this._onDropOwnerActor(ev));
     }
+
+    // Drop an Actor onto a staff card to link them.
+    this.element.querySelectorAll('.cfer-store-staff-card').forEach(card => {
+      if (!this.isEditable) return;
+      card.addEventListener('dragover', ev => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'link'; });
+      card.addEventListener('drop', async ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        let data;
+        try { data = JSON.parse(ev.dataTransfer.getData('text/plain')); } catch { return; }
+        if (data.type !== 'Actor' || !data.uuid) return;
+        const actor = await fromUuid(data.uuid).catch(() => null);
+        if (!actor) return;
+        const staffId = card.dataset.staffId;
+        await this._patch(s => {
+          const m = (s.staff || []).find(x => x.id === staffId);
+          if (m) { m.actorId = actor.id; m.name = m.name || actor.name; }
+        });
+      });
+    });
 
     const searchEl = this.element.querySelector('[data-browser-search]');
     if (searchEl) {
@@ -723,6 +754,108 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     if (actor?.sheet) actor.sheet.render(true);
   }
 
+
+  /* ── staff management ───────────────────────────────────── */
+
+  _staffIdFromEvent(ev) {
+    return ev.target.closest('[data-staff-id]')?.dataset?.staffId || null;
+  }
+
+  async _onEditStaff(staffId) {
+    if (!this.isEditable) return;
+    const store = this._getStoreClone();
+    const member = staffId ? (store.staff || []).find(s => s.id === staffId) : {};
+    if (staffId && !member) return;
+    const result = await foundry.applications.api.DialogV2.prompt({
+      window: { title: staffId ? `Edit ${member.name}` : 'Add staff member' },
+      content: `
+        <div class="form-group"><label>Name</label><input type="text" name="sname" value="${foundry.utils.escapeHTML(member?.name || '')}" /></div>
+        <div class="form-group"><label>Role</label><input type="text" name="srole" value="${foundry.utils.escapeHTML(member?.role || '')}" placeholder="Clerk, guard, apprentice…" /></div>
+        <div class="form-group"><label>Race</label><input type="text" name="skin" value="${foundry.utils.escapeHTML(member?.race || '')}" /></div>
+        <div class="form-group"><label>Description</label><textarea name="sdesc" rows="3">${foundry.utils.escapeHTML(member?.description || '')}</textarea></div>`,
+      ok: {
+        label: 'Save',
+        callback: (_ev, button) => ({
+          name:        button.form.elements.sname.value.trim(),
+          role:        button.form.elements.srole.value.trim(),
+          kin:         button.form.elements.skin.value.trim(),
+          description: button.form.elements.sdesc.value.trim(),
+        }),
+      },
+      rejectClose: false,
+    }).catch(() => null);
+    if (!result || !result.name) return;
+    await this._patch(s => {
+      s.staff = s.staff || [];
+      if (staffId) {
+        const m = s.staff.find(x => x.id === staffId);
+        if (m) { m.name = result.name; m.role = result.role; m.race = result.kin; m.description = result.description; }
+      } else {
+        s.staff.push({ id: foundry.utils.randomID(8), name: result.name, role: result.role || 'Clerk', race: result.kin, description: result.description, actorId: null });
+      }
+    });
+  }
+
+  async _onRemoveStaff(ev) {
+    if (!this.isEditable) return;
+    const staffId = this._staffIdFromEvent(ev);
+    if (!staffId) return;
+    await this._patch(s => { s.staff = (s.staff || []).filter(x => x.id !== staffId); });
+  }
+
+  /** Hand the staff member to the NPC Maker and link the created actor back. */
+  _onGenerateStaffActor(ev) {
+    if (!this.isEditable) return;
+    if (!game.modules.get('DnD5eNpcMaker')?.active) {
+      return ui.notifications.warn('Install & enable DnD5eNpcMaker to generate staff NPCs.');
+    }
+    const staffId = this._staffIdFromEvent(ev);
+    const store = this._getStoreClone();
+    const member = staffId === '__owner'
+      ? { ...(store.owner || {}), role: 'Owner and shopkeeper' }
+      : (store.staff || []).find(s => s.id === staffId);
+    if (!member?.name) return;
+    const description = [
+      `${member.role || 'Employee'} at ${this.document.name}, a ${store.storeType || 'general'} store` +
+        (store.settlementSize ? ` in a ${store.settlementSize}` : '') + '.',
+      member.race ? `${member.race}.` : '',
+      member.description || '',
+    ].filter(Boolean).join(' ');
+    const journalId = this.document.id;
+    Hooks.callAll('DnD5eNpcMaker.openWithPrefill', {
+      name: member.name,
+      level: Math.max(1, Number(store.level) || 1),
+      description,
+      onCreate: async (actor) => {
+        try {
+          const journal = game.journal.get(journalId);
+          if (!journal) return;
+          const cur = foundry.utils.deepClone(journal.getFlag(MODULE_ID, FLAG_KEY)) || {};
+          if (staffId === '__owner') {
+            cur.owner = cur.owner || {};
+            cur.owner.actorId = actor.id;
+          } else {
+            const m = (cur.staff || []).find(x => x.id === staffId);
+            if (m) m.actorId = actor.id;
+          }
+          await journal.setFlag(MODULE_ID, FLAG_KEY, cur);
+          ui.notifications.info(`${actor.name} linked to ${journal.name}.`);
+        } catch (err) {
+          console.error(`[${MODULE_ID}] failed to link staff actor`, err);
+        }
+      },
+    });
+  }
+
+  _onOpenStaffActor(ev) {
+    ev?.stopPropagation?.();
+    const staffId = this._staffIdFromEvent(ev);
+    const store = this._getStoreClone();
+    const actorId = staffId === '__owner' ? store.owner?.actorId : (store.staff || []).find(s => s.id === staffId)?.actorId;
+    const actor = actorId ? game.actors.get(actorId) : null;
+    if (actor?.sheet) actor.sheet.render(true);
+  }
+
   /* ── special orders ─────────────────────────────────────── */
 
   async _onOrderItem(ev) {
@@ -895,6 +1028,7 @@ export function migrateLegacyStore(journal) {
     settlementSize,
     description,
     owner,
+    staff:          [],
     itemFolderId:   folderId,
     inventory,
   };

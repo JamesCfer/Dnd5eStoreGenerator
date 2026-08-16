@@ -1887,6 +1887,32 @@ a.cfer-store-row-price { cursor: pointer; text-decoration: underline dotted; }
 .cfer-browser-filter input[type="number"] { width: 3.5em; }
 
 .cfer-browser-wiki { flex: 1 1 100%; padding: 0.25em 0.5em; font-size: 0.85em; cursor: pointer; }
+
+/* ── staff cards ────────────────────────────────────────── */
+
+.cfer-store-staff { display: flex; flex-direction: column; gap: 0.3em; }
+.cfer-store-staff-list { display: flex; flex-wrap: wrap; gap: 0.5em; }
+.cfer-store-staff-card {
+  display: flex; align-items: flex-start; gap: 0.5em;
+  flex: 1 1 260px; max-width: 420px;
+  padding: 0.35em 0.55em;
+  border: 1px solid rgba(120, 100, 70, 0.45);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.cfer-store-staff-portrait {
+  width: 34px; height: 34px; object-fit: cover;
+  border-radius: 50%; border: 1px solid rgba(120, 100, 70, 0.6);
+  flex: 0 0 auto;
+}
+.cfer-store-staff-icon { font-size: 1.4em; opacity: 0.55; margin-top: 2px; flex: 0 0 auto; }
+.cfer-store-staff-text { flex: 1; min-width: 0; }
+.cfer-store-staff-text strong { display: block; }
+.cfer-store-staff-text p { margin: 2px 0 0; font-size: 0.82em; opacity: 0.85; }
+.cfer-store-staff-add {
+  align-self: flex-start;
+  padding: 0.2em 0.7em; font-size: 0.85em; cursor: pointer;
+}
 /* ── D&D 5e theme: dark leather & dragon red ───────────── */
 
 .application.npc-builder .window-content {

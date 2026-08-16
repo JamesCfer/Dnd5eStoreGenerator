@@ -53,7 +53,9 @@
         <strong>{{store.owner.name}}</strong>{{#if store.owner.race}} <span class="cfer-muted">— {{store.owner.race}}</span>{{/if}}
         {{#if store.owner.actorId}}
           <button type="button" class="cfer-icon-btn" data-action="openOwnerActor" title="Open linked actor"><i class="fa-solid fa-user"></i></button>
-        {{/if}}
+        {{else}}{{#if editable}}{{#if npcMakerActive}}
+          <button type="button" class="cfer-icon-btn" data-staff-id="__owner" data-action="generateStaffActor" title="Generate an NPC actor with the NPC Maker"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+        {{/if}}{{/if}}{{/if}}
         {{#if store.owner.description}}<p>{{store.owner.description}}</p>{{/if}}
       </div>
     </div>
@@ -63,6 +65,43 @@
       <span class="cfer-drop-hint">…or drop an Actor here</span>
     </div>
   {{/if}}
+
+
+  {{#if staff.length}}
+  <div class="cfer-store-staff">
+    <h4 class="cfer-store-group-label"><i class="fa-solid fa-users"></i> Staff</h4>
+    <div class="cfer-store-staff-list">
+      {{#each staff}}
+        <div class="cfer-store-staff-card" data-staff-id="{{this.id}}">
+          {{#if this.portrait}}
+            <img class="cfer-store-staff-portrait" src="{{this.portrait}}" alt="{{this.name}}" />
+          {{else}}
+            <i class="fa-solid fa-user cfer-store-staff-icon"></i>
+          {{/if}}
+          <div class="cfer-store-staff-text">
+            <strong>{{this.name}}</strong>
+            <span class="cfer-muted">{{this.role}}{{#if this.race}} · {{this.race}}{{/if}}</span>
+            {{#if this.description}}<p>{{this.description}}</p>{{/if}}
+          </div>
+          {{#if this.hasActor}}
+            <button type="button" class="cfer-icon-btn" data-action="openStaffActor" title="Open linked actor"><i class="fa-solid fa-user"></i></button>
+          {{else}}{{#if ../editable}}{{#if ../npcMakerActive}}
+            <button type="button" class="cfer-icon-btn" data-action="generateStaffActor" title="Generate an NPC actor with the NPC Maker"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+          {{/if}}{{/if}}{{/if}}
+          {{#if ../editable}}
+            <button type="button" class="cfer-icon-btn" data-action="editStaff" title="Edit"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="cfer-icon-btn" data-action="removeStaff" title="Remove"><i class="fa-solid fa-trash"></i></button>
+          {{/if}}
+        </div>
+      {{/each}}
+    </div>
+    {{#if editable}}<button type="button" class="cfer-store-staff-add" data-action="addStaff"><i class="fa-solid fa-user-plus"></i> Add staff member</button>{{/if}}
+  </div>
+  {{else}}{{#if editable}}
+  <div class="cfer-store-staff cfer-store-staff--empty">
+    <button type="button" class="cfer-store-staff-add" data-action="addStaff"><i class="fa-solid fa-user-plus"></i> Add staff member</button>
+  </div>
+  {{/if}}{{/if}}
 
   <div class="cfer-store-main {{#if browserOpen}}has-browser{{/if}}">
 
