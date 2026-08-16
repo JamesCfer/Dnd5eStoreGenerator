@@ -12,10 +12,10 @@
       {{#if priceMulLabel}}<span class="cfer-store-mul-pill" title="Price multiplier">{{priceMulLabel}} prices</span>{{/if}}
     </div>
     <div class="cfer-store-header-actions">
+      <button type="button" data-action="toggleBrowser" class="{{#if browserOpen}}is-active{{/if}}" title="Browse the catalog — order items the store doesn't stock ({{orderFee}}% fee)">
+        <i class="fa-solid fa-book-open"></i> Catalog
+      </button>
       {{#if editable}}
-        <button type="button" data-action="toggleBrowser" class="{{#if browserOpen}}is-active{{/if}}">
-          <i class="fa-solid fa-book-open"></i> Compendium Stock
-        </button>
         <button type="button" data-action="restock" title="Add 3 random type-appropriate items from the compendium">
           <i class="fa-solid fa-boxes-stacked"></i> Restock ×3
         </button>
@@ -104,6 +104,26 @@
       {{else}}
         <p class="cfer-store-empty"><em>The shelves are bare.{{#if editable}} Drag items in, or use Compendium Stock / Restock.{{/if}}</em></p>
       {{/if}}
+
+      {{#if orders.length}}
+        <h4 class="cfer-store-group-label cfer-store-orders-label"><i class="fa-solid fa-scroll"></i> Special Orders</h4>
+        <ul class="cfer-store-rows cfer-store-orders">
+          {{#each orders}}
+            <li class="cfer-store-row cfer-store-order-row {{#if this.isMine}}is-mine{{/if}}" data-order-id="{{this.id}}">
+              <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
+              <span class="cfer-store-row-name">{{this.name}}</span>
+              <span class="cfer-muted">for {{this.buyerName}}{{#if this.dateLabel}} · {{this.dateLabel}}{{/if}}</span>
+              <span class="cfer-store-row-price">{{this.priceLabel}}</span>
+              {{#if ../editable}}
+                <button type="button" class="cfer-store-row-buy" data-action="deliverOrder" title="The order arrives — deliver it to the buyer"><i class="fa-solid fa-box-open"></i> Deliver</button>
+                <button type="button" class="cfer-icon-btn" data-action="cancelOrder" title="Cancel and refund"><i class="fa-solid fa-rotate-left"></i></button>
+              {{else}}
+                <span class="cfer-store-order-status"><i class="fa-solid fa-hourglass-half"></i> on order</span>
+              {{/if}}
+            </li>
+          {{/each}}
+        </ul>
+      {{/if}}
     </section>
 
     {{#if browserOpen}}
@@ -115,13 +135,16 @@
         <input type="search" data-browser-search placeholder="Search items…" value="{{browserSearch}}" />
         <ul class="cfer-store-rows cfer-store-browser-rows">
           {{#each browserRows}}
-            <li class="cfer-store-row" draggable="true" data-drag-uuid="{{this.uuid}}" data-browser-uuid="{{this.uuid}}">
+            <li class="cfer-store-row" draggable="true" data-drag-uuid="{{this.uuid}}" data-browser-uuid="{{this.uuid}}" data-price-cp="{{this.priceCp}}" data-item-name="{{this.name}}">
               <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
               <span class="cfer-store-row-name">{{this.name}}</span>
               <span class="cfer-store-row-level">{{this.rarity}}</span>
               <span class="cfer-store-row-price">{{this.price}}</span>
+              {{#if ../canTrade}}
+                <button type="button" class="cfer-icon-btn" data-action="orderItem" title="Special-order this item ({{../orderFee}}% fee, paid in advance)"><i class="fa-solid fa-scroll"></i></button>
+              {{/if}}
               {{#if ../editable}}
-                <button type="button" class="cfer-icon-btn" data-action="addFromBrowser" title="Add to store"><i class="fa-solid fa-plus"></i></button>
+                <button type="button" class="cfer-icon-btn" data-action="addFromBrowser" title="Add to stock now"><i class="fa-solid fa-plus"></i></button>
               {{/if}}
             </li>
           {{else}}

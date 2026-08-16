@@ -14,7 +14,7 @@
  *    capped by the store's wealth tier
  */
 
-import { priceToCp, cpLabel, effectiveCp, requestTransaction } from './transactions.js';
+import { priceToCp, cpLabel, effectiveCp, orderFeePct, requestTransaction } from './transactions.js';
 
 const MODULE_ID = 'Dnd5eStoreGenerator';
 const FLAG_KEY  = 'store';
@@ -119,6 +119,9 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       storeSettings: function()   { this._onStoreSettings(); },
       shareStore:    function()   { this._onShareStore(); },
       openOwnerActor: function(ev) { this._onOpenOwnerActor(ev); },
+      orderItem:     function(ev) { this._onOrderItem(ev); },
+      deliverOrder:  function(ev) { this._onDeliverOrder(ev); },
+      cancelOrder:   function(ev) { this._onCancelOrder(ev); },
     },
   };
 
@@ -185,6 +188,13 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const ownerActor = store.owner?.actorId ? game.actors.get(store.owner.actorId) : null;
 
+    const orders = (store.orders || []).map(o => ({
+      ...o,
+      priceLabel: cpLabel(Number(o.priceCp) || 0),
+      dateLabel:  o.placedAt ? new Date(o.placedAt).toLocaleDateString() : '',
+      isMine:     !!game.user.character && o.buyerUuid === game.user.character.uuid,
+    }));
+
     return {
       doc:            this.document,
       store,
@@ -197,6 +207,8 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       priceMulLabel:  Number(store.priceMultiplier) && Number(store.priceMultiplier) !== 1
                         ? `×${Number(store.priceMultiplier)}` : '',
       ownerPortrait:  ownerActor?.img || null,
+      orders,
+      orderFee:       orderFeePct(store),
       browserOpen:    this.browserOpen,
       browserSearch:  this.browserSearch,
       browserRows,
@@ -259,6 +271,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
         img:    e.img || 'icons/svg/item-bag.svg',
         rarity: rarityLabel(e.system?.rarity),
         price:  priceLabel(e.system?.price),
+        priceCp: priceToCp(e.system?.price),
       }));
   }
 
@@ -540,6 +553,9 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
         <div class="form-group"><label>Buy-from-players rate</label>
           <input type="number" name="rate" min="0" max="1" step="0.05" value="${rate}" />
           <p class="hint">Fraction of item value paid when players sell (0.5 = half price).</p></div>
+        <div class="form-group"><label>Special-order fee (%)</label>
+          <input type="number" name="fee" min="0" max="100" step="1" value="${orderFeePct(store)}" />
+          <p class="hint">Surcharge for ordering items the store does not stock.</p></div>
         <div class="form-group"><label class="checkbox"><input type="checkbox" name="selling" ${store.allowSelling !== false ? 'checked' : ''}/> Buys items from players</label></div>
         <div class="form-group"><label class="checkbox"><input type="checkbox" name="closed" ${store.closed ? 'checked' : ''}/> Store is closed</label></div>`,
       ok: {
@@ -547,6 +563,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
         callback: (_ev, button) => ({
           mul:     Number(button.form.elements.mul.value),
           rate:    Number(button.form.elements.rate.value),
+          fee:     Number(button.form.elements.fee.value),
           selling: button.form.elements.selling.checked,
           closed:  button.form.elements.closed.checked,
         }),
@@ -557,6 +574,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     await this._patch(s => {
       s.priceMultiplier = Number.isFinite(result.mul) && result.mul > 0 ? result.mul : 1;
       s.sellRate        = Number.isFinite(result.rate) ? Math.min(1, Math.max(0, result.rate)) : 0.5;
+      s.orderFeePct     = Number.isFinite(result.fee) ? Math.min(100, Math.max(0, result.fee)) : 10;
       s.allowSelling    = result.selling;
       s.closed          = result.closed;
     });
@@ -596,6 +614,55 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     const store = this._getStoreClone();
     const actor = store.owner?.actorId ? game.actors.get(store.owner.actorId) : null;
     if (actor?.sheet) actor.sheet.render(true);
+  }
+
+  /* ── special orders ─────────────────────────────────────── */
+
+  async _onOrderItem(ev) {
+    const row = ev.target.closest('[data-browser-uuid]');
+    if (!row) return;
+    const uuid = row.dataset.browserUuid;
+    const store = this._getStoreClone();
+    if (store.closed && !this.isEditable) return ui.notifications.warn(`${this.document.name} is closed.`);
+
+    const actor = game.user.character || canvas.tokens?.controlled?.[0]?.actor;
+    if (!actor) return ui.notifications.warn('Assign a character to your user (or select a token) before ordering.');
+
+    const baseCp = Number(row.dataset.priceCp) || 0;
+    const mul = Number(store.priceMultiplier) || 1;
+    const cost = Math.max(0, Math.round(baseCp * mul * (1 + orderFeePct(store) / 100)));
+    const name = row.dataset.itemName || 'this item';
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: `Special order — ${this.document.name}` },
+      content: `<p><strong>${foundry.utils.escapeHTML(actor.name)}</strong> orders <strong>${foundry.utils.escapeHTML(name)}</strong> for <strong>${cpLabel(cost)}</strong> (includes ${orderFeePct(store)}% ordering fee, paid in advance)?</p><p class="hint">The shopkeeper will send word when it arrives.</p>`,
+      rejectClose: false,
+    }).catch(() => false);
+    if (!ok) return;
+    await requestTransaction({
+      type:        'order',
+      journalUuid: this.document.uuid,
+      itemUuid:    uuid,
+      actorUuid:   actor.uuid,
+    });
+  }
+
+  async _onDeliverOrder(ev) {
+    if (!this.isEditable) return;
+    const orderId = ev.target.closest('[data-order-id]')?.dataset?.orderId;
+    if (!orderId) return;
+    await requestTransaction({ type: 'deliverOrder', journalUuid: this.document.uuid, orderId });
+  }
+
+  async _onCancelOrder(ev) {
+    if (!this.isEditable) return;
+    const orderId = ev.target.closest('[data-order-id]')?.dataset?.orderId;
+    if (!orderId) return;
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Cancel order' },
+      content: '<p>Cancel this order and refund the buyer?</p>',
+      rejectClose: false,
+    }).catch(() => false);
+    if (ok) await requestTransaction({ type: 'cancelOrder', journalUuid: this.document.uuid, orderId });
   }
 }
 

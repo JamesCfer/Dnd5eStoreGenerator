@@ -181,7 +181,107 @@ export async function executeSell({ journalUuid, itemUuid, actorUuid }) {
   return { ok: true, message: `Sold ${worldItem.name} for ${cpLabel(payout)}.` };
 }
 
+/* ── special orders ───────────────────────────────────────── */
+
+/** Order fee (percent on top of the adjusted price) for un-stocked items. */
+export function orderFeePct(store) {
+  const f = Number(store?.orderFeePct);
+  return Number.isFinite(f) && f >= 0 ? f : 10;
+}
+
+export async function executeOrder({ journalUuid, itemUuid, actorUuid }) {
+  const journal = await fromUuid(journalUuid);
+  const store = getStoreFlag(journal);
+  if (!store) return { ok: false, message: 'Store not found.' };
+  if (store.closed) return { ok: false, message: `${journal.name} is closed.` };
+
+  const source = await fromUuid(itemUuid).catch(() => null);
+  if (!source) return { ok: false, message: 'That item could not be found in the catalog.' };
+  const actor = await fromUuid(actorUuid);
+  if (!actor) return { ok: false, message: 'Buyer actor not found.' };
+
+  const baseCp = priceToCp(source.system?.price);
+  const mul = Number(store.priceMultiplier) || 1;
+  const cost = Math.max(0, Math.round(baseCp * mul * (1 + orderFeePct(store) / 100)));
+  if (!(await deductCoins(actor, cost))) {
+    return { ok: false, message: `${actor.name} cannot afford to order ${source.name} (${cpLabel(cost)}).` };
+  }
+
+  const orders = foundry.utils.deepClone(store.orders || []);
+  orders.push({
+    id:        `ord-${foundry.utils.randomID(8)}`,
+    uuid:      itemUuid,
+    name:      source.name,
+    img:       source.img || 'icons/svg/item-bag.svg',
+    priceCp:   cost,
+    buyerUuid: actor.uuid,
+    buyerName: actor.name,
+    placedAt:  Date.now(),
+    status:    'ordered',
+  });
+  await journal.setFlag(MODULE_ID, FLAG_KEY, { ...store, orders });
+
+  await ChatMessage.create({
+    content: `<p class="cfer-store-receipt"><i class="fa-solid fa-scroll"></i> <strong>${foundry.utils.escapeHTML(actor.name)}</strong> placed a special order for <strong>${foundry.utils.escapeHTML(source.name)}</strong> at <strong>${foundry.utils.escapeHTML(journal.name)}</strong> (${cpLabel(cost)}, paid in advance).</p>`,
+  });
+  return { ok: true, message: `Ordered ${source.name} for ${cpLabel(cost)}.` };
+}
+
+export async function executeDeliverOrder({ journalUuid, orderId }) {
+  const journal = await fromUuid(journalUuid);
+  const store = getStoreFlag(journal);
+  if (!store) return { ok: false, message: 'Store not found.' };
+  const order = (store.orders || []).find(o => o.id === orderId);
+  if (!order) return { ok: false, message: 'Order not found.' };
+
+  const source = await fromUuid(order.uuid).catch(() => null);
+  const buyer = await fromUuid(order.buyerUuid).catch(() => null);
+  if (!source || !buyer) return { ok: false, message: 'The ordered item or its buyer no longer exists — cancel the order instead.' };
+
+  const data = source.toObject();
+  delete data._id;
+  delete data.folder;
+  data.system = data.system || {};
+  data.system.quantity = 1;
+  await buyer.createEmbeddedDocuments('Item', [data]);
+
+  const orders = (store.orders || []).filter(o => o.id !== orderId);
+  await journal.setFlag(MODULE_ID, FLAG_KEY, { ...store, orders });
+
+  await ChatMessage.create({
+    content: `<p class="cfer-store-receipt"><i class="fa-solid fa-box-open"></i> <strong>${foundry.utils.escapeHTML(order.name)}</strong> has arrived at <strong>${foundry.utils.escapeHTML(journal.name)}</strong> and was delivered to <strong>${foundry.utils.escapeHTML(order.buyerName)}</strong>.</p>`,
+  });
+  return { ok: true, message: `${order.name} delivered to ${order.buyerName}.` };
+}
+
+export async function executeCancelOrder({ journalUuid, orderId }) {
+  const journal = await fromUuid(journalUuid);
+  const store = getStoreFlag(journal);
+  if (!store) return { ok: false, message: 'Store not found.' };
+  const order = (store.orders || []).find(o => o.id === orderId);
+  if (!order) return { ok: false, message: 'Order not found.' };
+
+  const buyer = await fromUuid(order.buyerUuid).catch(() => null);
+  if (buyer) await addCoins(buyer, Number(order.priceCp) || 0);
+
+  const orders = (store.orders || []).filter(o => o.id !== orderId);
+  await journal.setFlag(MODULE_ID, FLAG_KEY, { ...store, orders });
+
+  await ChatMessage.create({
+    content: `<p class="cfer-store-receipt"><i class="fa-solid fa-rotate-left"></i> The order for <strong>${foundry.utils.escapeHTML(order.name)}</strong> at <strong>${foundry.utils.escapeHTML(journal.name)}</strong> was cancelled${buyer ? ` — <strong>${foundry.utils.escapeHTML(order.buyerName)}</strong> was refunded ${cpLabel(order.priceCp)}` : ''}.</p>`,
+  });
+  return { ok: true, message: `Order cancelled${buyer ? ` and ${cpLabel(order.priceCp)} refunded` : ''}.` };
+}
+
 /* ── socket relay ─────────────────────────────────────────── */
+
+const EXECUTORS = {
+  buy:         executeBuy,
+  sell:        executeSell,
+  order:       executeOrder,
+  deliverOrder: executeDeliverOrder,
+  cancelOrder:  executeCancelOrder,
+};
 
 async function handleSocket(data) {
   if (data?.type === 'result') {
@@ -190,10 +290,9 @@ async function handleSocket(data) {
   }
   // Only the designated active GM executes transactions.
   if (!game.users.activeGM?.isSelf) return;
-  let result;
-  if (data?.type === 'buy')      result = await executeBuy(data);
-  else if (data?.type === 'sell') result = await executeSell(data);
-  else return;
+  const executor = EXECUTORS[data?.type];
+  if (!executor) return;
+  const result = await executor(data);
   game.socket.emit(SOCKET, { type: 'result', userId: data.userId, ...result });
 }
 
@@ -203,8 +302,10 @@ export function registerStoreSockets() {
 
 /** Run a transaction: locally when GM, otherwise relayed to the active GM. */
 export async function requestTransaction(payload) {
+  const executor = EXECUTORS[payload.type];
+  if (!executor) return { ok: false, message: `Unknown transaction: ${payload.type}` };
   if (game.user.isGM) {
-    const result = payload.type === 'buy' ? await executeBuy(payload) : await executeSell(payload);
+    const result = await executor(payload);
     ui.notifications[result.ok ? 'info' : 'warn'](result.message);
     return result;
   }
