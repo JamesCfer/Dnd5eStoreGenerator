@@ -65,11 +65,33 @@ export class StoresTab extends HandlebarsApplicationMixin(AbstractSidebarTab) {
 
 /** Register the tab with the sidebar. Call from the init hook. */
 export function registerStoresTab() {
-  CONFIG.ui.stores = StoresTab;
-  foundry.applications.sidebar.Sidebar.TABS.stores = {
-    tooltip: 'Stores',
-    icon:    'fa-solid fa-shop',
-  };
+  try {
+    CONFIG.ui.stores = StoresTab;
+    const SidebarCls = foundry.applications.sidebar?.Sidebar;
+    const tabs = SidebarCls?.TABS ?? SidebarCls?.prototype?.TABS;
+    if (tabs && !tabs.stores) tabs.stores = { tooltip: 'Stores', icon: 'fa-solid fa-shop' };
+  } catch (err) {
+    console.error(`[${MODULE_ID}] failed to register the Stores tab`, err);
+  }
+}
+
+/**
+ * Make sure the tab actually exists once the UI is up. Foundry v13 builds
+ * ui.* from CONFIG.ui, but v14 does not adopt entries added by modules —
+ * so if core didn't instantiate our tab, mount it ourselves and re-render
+ * the sidebar so the rail picks up the button.
+ */
+export function ensureStoresTab() {
+  try {
+    registerStoresTab();
+    if (!ui.stores && CONFIG.ui.stores) {
+      ui.stores = new CONFIG.ui.stores();
+      console.info(`[${MODULE_ID}] Stores tab mounted manually (core did not adopt CONFIG.ui.stores).`);
+    }
+    if (ui.stores && !ui.stores.rendered) ui.sidebar?.render();
+  } catch (err) {
+    console.error(`[${MODULE_ID}] failed to mount the Stores tab`, err);
+  }
 }
 
 /** Keep the tab live and the Journal directory free of store entries. */

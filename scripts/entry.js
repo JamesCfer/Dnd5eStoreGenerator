@@ -12,7 +12,7 @@ import { Storage }              from './core/storage.js';
 import { Dnd5eStoreAdapter }    from './adapter.js';
 import { StoreSheet, getStore, migrateLegacyStore, openStoreSheet } from './store-sheet.js';
 import { registerStoreSockets } from './transactions.js';
-import { StoresTab, registerStoresTab, registerStoresTabHooks } from './stores-tab.js';
+import { StoresTab, registerStoresTab, registerStoresTabHooks, ensureStoresTab } from './stores-tab.js';
 
 const adapter   = new Dnd5eStoreAdapter();
 const MODULE_ID = adapter.module.id;
@@ -148,6 +148,7 @@ Hooks.once('ready', () => {
   startHeartbeat(MODULE_ID);
   registerStoreSockets();
   StoresTab.openGenerator = openFn;
+  ensureStoresTab();
   registerStoresTabHooks();
 
   const module = game.modules.get(MODULE_ID);
