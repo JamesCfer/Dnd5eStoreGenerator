@@ -14,7 +14,7 @@
  *    capped by the store's wealth tier
  */
 
-import { priceToCp, cpLabel, effectiveCp, orderFeePct, requestTransaction } from './transactions.js';
+import { priceToCp, cpLabel, effectiveCp, orderFeePct, parsePriceLabelCp, requestTransaction } from './transactions.js';
 
 const MODULE_ID = 'Dnd5eStoreGenerator';
 const FLAG_KEY  = 'store';
@@ -89,6 +89,19 @@ function snapshotFromItem(item) {
     priceCp: priceToCp(item.system?.price),
     qty:     Math.max(1, Number(item.system?.quantity) || 1),
   };
+}
+
+/* One sheet instance per journal so repeated hook fire cannot open duplicates. */
+const OPEN_SHEETS = new Map();
+
+export function openStoreSheet(journal) {
+  let sheet = OPEN_SHEETS.get(journal.id);
+  if (!sheet) {
+    sheet = new StoreSheet(journal);
+    OPEN_SHEETS.set(journal.id, sheet);
+  }
+  sheet.render(true);
+  return sheet;
 }
 
 export function getStore(doc) {
@@ -226,6 +239,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _onClose(options) {
+    OPEN_SHEETS.delete(this.document?.id);
     if (this._updateHookId) Hooks.off('updateJournalEntry', this._updateHookId);
     super._onClose?.(options);
   }
@@ -667,24 +681,77 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
 }
 
 /**
- * Build a store flag for journals created before the custom sheet existed
- * (they only carried itemFolderId). Reads the folder's items as inventory.
+ * Build a store flag for journals created before the custom sheet existed.
+ * Handles two legacy generations: journals that carried only itemFolderId,
+ * and journals with no module flags at all — those are recognized by their
+ * generated "Store Overview" page and rebuilt from its HTML.
  */
 export function migrateLegacyStore(journal) {
-  const flags = journal?.flags?.[MODULE_ID];
-  if (!flags || flags[FLAG_KEY]) return null;
-  const folderId = flags.itemFolderId;
-  if (!folderId) return null;
-  const folder = game.folders.get(folderId);
-  const items = folder ? game.items.filter(i => i.folder?.id === folderId) : [];
+  const flags = journal?.flags?.[MODULE_ID] || {};
+  if (flags[FLAG_KEY]) return null;
+
+  const folderId = flags.itemFolderId || null;
+  const folder = folderId ? game.folders.get(folderId) : null;
+  let inventory = folder ? game.items.filter(i => i.folder?.id === folderId).map(snapshotFromItem) : [];
+
+  const page = journal?.pages?.find?.(p => p.name === 'Store Overview');
+  const html = page?.text?.content || '';
+  const looksLikeStore = /<h2>\s*(Inventory|Shopkeeper)\s*<\/h2>/i.test(html);
+  if (!folderId && !looksLikeStore) return null;
+
+  let storeType = 'general';
+  let settlementSize = 'town';
+  let wealth = 'modest';
+  let description = '';
+  let owner = null;
+
+  if (html) {
+    const headMatch = html.match(/<p><strong>([^<]+)<\/strong>(?:\s*·\s*([^<]+))?<\/p>/);
+    if (headMatch) {
+      const label = headMatch[1].trim();
+      for (const [key, l] of Object.entries(STORE_TYPE_LABELS)) if (l === label) storeType = key;
+      const size = (headMatch[2] || '').trim().toLowerCase();
+      if (['village', 'town', 'city', 'metropolis'].includes(size)) settlementSize = size;
+    }
+    const descMatch = html.match(/<p><strong>[^<]*<\/strong>[^<]*<\/p>\s*<p>([\s\S]*?)<\/p>/);
+    if (descMatch) description = descMatch[1].replace(/<[^>]+>/g, '').trim();
+    const ownerMatch = html.match(/<h2>\s*Shopkeeper\s*<\/h2>\s*<p><strong>([^<]+)<\/strong>(?:\s*[—-]\s*([^<]+))?<\/p>\s*(?:<p>([\s\S]*?)<\/p>)?/i);
+    if (ownerMatch) {
+      owner = {
+        name:        ownerMatch[1].trim(),
+        race:        (ownerMatch[2] || '').trim(),
+        description: (ownerMatch[3] || '').replace(/<[^>]+>/g, '').trim(),
+      };
+    }
+    if (!inventory.length) {
+      const rowRe = /@UUID\[([^\]]+)\]\{([^}]*)\}<\/td>\s*<td[^>]*>\s*([^<]*?)\s*<\/td>\s*<td[^>]*>\s*([^<]*?)\s*<\/td>/g;
+      let m;
+      while ((m = rowRe.exec(html))) {
+        let doc = null;
+        try { doc = fromUuidSync(m[1]); } catch (_) { /* compendium uuids need async — fall through */ }
+        if (doc) inventory.push(snapshotFromItem(doc));
+        else inventory.push({
+          uuid:    m[1],
+          name:    m[2] || 'Item',
+          img:     'icons/svg/item-bag.svg',
+          type:    'equipment',
+          rarity:  m[3] || 'Mundane',
+          price:   m[4] || '—',
+          priceCp: parsePriceLabelCp(m[4] || ''),
+          qty:     1,
+        });
+      }
+    }
+  }
+
   return {
     name:           journal.name,
-    storeType:      'general',
-    wealth:         'modest',
-    settlementSize: 'town',
-    description:    '',
-    owner:          null,
+    storeType,
+    wealth,
+    settlementSize,
+    description,
+    owner,
     itemFolderId:   folderId,
-    inventory:      items.map(snapshotFromItem),
+    inventory,
   };
 }

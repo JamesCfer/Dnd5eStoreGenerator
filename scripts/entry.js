@@ -10,20 +10,23 @@ import { registerSidebar }      from './core/sidebar.js';
 import { startHeartbeat }       from './core/heartbeat.js';
 import { Storage }              from './core/storage.js';
 import { Dnd5eStoreAdapter }    from './adapter.js';
-import { StoreSheet, getStore, migrateLegacyStore } from './store-sheet.js';
+import { StoreSheet, getStore, migrateLegacyStore, openStoreSheet } from './store-sheet.js';
 import { registerStoreSockets } from './transactions.js';
 
 const adapter   = new Dnd5eStoreAdapter();
 const MODULE_ID = adapter.module.id;
 
 // Intercept JournalEntry sheet rendering — journals carrying a store flag
-// open the custom store sheet instead of the stock journal sheet.
-// Foundry v12 fires renderJournalSheet (AppV1); v13+ fires
-// renderJournalEntrySheet (AppV2) — register the swap on both.
+// (or recognizable as legacy generated stores) open the custom store sheet
+// instead of the stock journal sheet. Sheet classes vary by core version and
+// system (JournalSheet, JournalEntrySheet, JournalSheetPF2e, …), so listen on
+// the base-class render hooks too; render hooks fire for every class in the
+// inheritance chain, and openStoreSheet dedupes repeat calls per journal.
 const swapToStoreSheet = (app) => {
   try {
+    if (app instanceof StoreSheet) return;
     const journal = app?.document;
-    if (!journal) return;
+    if (!(journal instanceof JournalEntry)) return;
     let store = getStore(journal);
     if (!store) {
       store = migrateLegacyStore(journal);
@@ -32,13 +35,15 @@ const swapToStoreSheet = (app) => {
     }
     // Defer the swap so we don't recurse during render.
     app.close({ submit: false });
-    queueMicrotask(() => new StoreSheet(journal).render(true));
+    queueMicrotask(() => openStoreSheet(journal));
   } catch (err) {
     console.error(`[${MODULE_ID}] store sheet swap failed`, err);
   }
 };
-Hooks.on('renderJournalSheet', swapToStoreSheet);
-Hooks.on('renderJournalEntrySheet', swapToStoreSheet);
+Hooks.on('renderJournalSheet', swapToStoreSheet);       // AppV1 leaf (v12) + subclasses
+Hooks.on('renderJournalEntrySheet', swapToStoreSheet);  // AppV2 leaf (v13+)
+Hooks.on('renderDocumentSheet', swapToStoreSheet);      // AppV1 base — any system subclass
+Hooks.on('renderDocumentSheetV2', swapToStoreSheet);    // AppV2 base — any system subclass
 
 const openFn = () => {
   openBuilder(adapter);
@@ -139,6 +144,20 @@ Hooks.once('ready', () => {
 
   startHeartbeat(MODULE_ID);
   registerStoreSockets();
+
+  const module = game.modules.get(MODULE_ID);
+  if (module) module.api = {
+    StoreSheet,
+    openStoreSheet,
+    open: (nameOrId) => {
+      const j = game.journal.get(nameOrId) || game.journal.getName(nameOrId);
+      if (!j) return ui.notifications.warn(`No journal named "${nameOrId}".`);
+      const store = getStore(j) || migrateLegacyStore(j);
+      if (!store) return ui.notifications.warn(`"${j.name}" does not look like a generated store.`);
+      if (!getStore(j) && game.user.isGM) j.setFlag(MODULE_ID, 'store', store).catch(() => {});
+      return openStoreSheet(j);
+    },
+  };
 
   if (game.user.isGM && !game.settings.get(MODULE_ID, 'welcomeMessageShown')) {
     const welcomeContent = `
