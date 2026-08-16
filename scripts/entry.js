@@ -59,7 +59,7 @@ registerSidebar(MODULE_ID, openFn, {
   directories: ['items', 'journal', 'compendium'],
 });
 
-class ResetWelcomeMessageMenu {
+class ResetWelcomeMessageMenu extends foundry.applications.api.ApplicationV2 {
   render() {
     foundry.applications.api.DialogV2.confirm({
       window:      { title: game.i18n.localize('NpcBuilder.Settings.ResetWelcome.Name') },
@@ -77,7 +77,7 @@ class ResetWelcomeMessageMenu {
   }
 }
 
-class ClearSessionMenu {
+class ClearSessionMenu extends foundry.applications.api.ApplicationV2 {
   render() {
     foundry.applications.api.DialogV2.confirm({
       window:      { title: game.i18n.localize('NpcBuilder.Settings.ClearSession.Name') },

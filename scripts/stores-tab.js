@@ -67,9 +67,22 @@ export class StoresTab extends HandlebarsApplicationMixin(AbstractSidebarTab) {
 export function registerStoresTab() {
   try {
     CONFIG.ui.stores = StoresTab;
-    const SidebarCls = foundry.applications.sidebar?.Sidebar;
-    const tabs = SidebarCls?.TABS ?? SidebarCls?.prototype?.TABS;
-    if (tabs && !tabs.stores) tabs.stores = { tooltip: 'Stores', icon: 'fa-solid fa-shop' };
+    // Target the sidebar class actually in use (CONFIG.ui.sidebar) — core or a
+    // system may subclass Sidebar with its own static TABS, in which case the
+    // base class record is ignored.
+    const sidebarClass = CONFIG.ui.sidebar ?? foundry.applications.sidebar?.Sidebar;
+    const tabs = sidebarClass?.TABS;
+    if (tabs && !tabs.stores) {
+      const entry = { tooltip: 'Stores', icon: 'fa-solid fa-shop' };
+      const settings = tabs.settings;
+      if (settings) {
+        delete tabs.settings;
+        tabs.stores = entry;
+        tabs.settings = settings;
+      } else {
+        tabs.stores = entry;
+      }
+    }
   } catch (err) {
     console.error(`[${MODULE_ID}] failed to register the Stores tab`, err);
   }
