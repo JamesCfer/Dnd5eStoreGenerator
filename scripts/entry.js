@@ -18,7 +18,9 @@ const MODULE_ID = adapter.module.id;
 
 // Intercept JournalEntry sheet rendering — journals carrying a store flag
 // open the custom store sheet instead of the stock journal sheet.
-Hooks.on('renderJournalSheet', (app) => {
+// Foundry v12 fires renderJournalSheet (AppV1); v13+ fires
+// renderJournalEntrySheet (AppV2) — register the swap on both.
+const swapToStoreSheet = (app) => {
   try {
     const journal = app?.document;
     if (!journal) return;
@@ -34,7 +36,9 @@ Hooks.on('renderJournalSheet', (app) => {
   } catch (err) {
     console.error(`[${MODULE_ID}] store sheet swap failed`, err);
   }
-});
+};
+Hooks.on('renderJournalSheet', swapToStoreSheet);
+Hooks.on('renderJournalEntrySheet', swapToStoreSheet);
 
 const openFn = () => {
   openBuilder(adapter);
