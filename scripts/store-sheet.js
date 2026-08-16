@@ -163,6 +163,9 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     this.document = journal;
     this.browserOpen   = false;
     this.browserSearch = '';
+    this.browserSource = 'all';
+    this.browserAllTypes = false;
+    this.browserAnyRarity = false;
     this._browserIndex = null;
   }
 
@@ -213,7 +216,11 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     let browserRows = [];
-    if (this.browserOpen) browserRows = await this._filteredBrowserRows(store);
+    let browserSources = [];
+    if (this.browserOpen) {
+      browserRows = await this._filteredBrowserRows(store);
+      browserSources = await this._browserSourceOptions();
+    }
 
     const ownerActor = store.owner?.actorId ? game.actors.get(store.owner.actorId) : null;
 
@@ -241,7 +248,9 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       browserOpen:    this.browserOpen,
       browserSearch:  this.browserSearch,
       browserRows,
-      browserSource:  'dnd5e system items',
+      browserSources,
+      browserAllTypes: this.browserAllTypes,
+      browserAnyRarity: this.browserAnyRarity,
     };
   }
 
@@ -264,7 +273,8 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _loadBrowserIndex() {
     if (this._browserIndex) return this._browserIndex;
-    const packs = game.packs.filter(p => p.documentName === 'Item' && p.metadata.packageName === 'dnd5e');
+    // Every Item compendium in the world: system, modules (importers included), and world packs.
+    const packs = game.packs.filter(p => p.documentName === 'Item');
     const rows = [];
     for (const pack of packs) {
       const index = await pack.getIndex({
@@ -275,7 +285,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       for (const e of index) {
         // Skip non-inventory documents that share the Item type (classes, spells, feats…).
         if (!['weapon', 'equipment', 'consumable', 'tool', 'loot', 'container', 'backpack'].includes(e.type)) continue;
-        rows.push({ ...e, uuid: e.uuid || `Compendium.${pack.collection}.Item.${e._id}` });
+        rows.push({ ...e, uuid: e.uuid || `Compendium.${pack.collection}.Item.${e._id}`, pack: pack.collection, packLabel: pack.metadata.label });
       }
     }
     return (this._browserIndex = rows);
@@ -289,12 +299,14 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     const index = await this._loadBrowserIndex();
     const cap = this._rarityCap(store);
     const search = this.browserSearch.trim().toLowerCase();
-    return index
-      .filter(e => matchesStoreType(e, store.storeType || 'general'))
-      .filter(e => (RARITY_RANK[String(e.system?.rarity || '')] ?? 0) <= cap)
+    let rows = index;
+    if (this.browserSource !== 'all') rows = rows.filter(e => e.pack === this.browserSource);
+    if (!this.browserAllTypes) rows = rows.filter(e => matchesStoreType(e, store.storeType || 'general'));
+    if (!this.browserAnyRarity) rows = rows.filter(e => (RARITY_RANK[String(e.system?.rarity || '')] ?? 0) <= cap);
+    return rows
       .filter(e => !search || e.name.toLowerCase().includes(search))
       .sort((a, b) => (RARITY_RANK[String(a.system?.rarity || '')] ?? 0) - (RARITY_RANK[String(b.system?.rarity || '')] ?? 0) || a.name.localeCompare(b.name))
-      .slice(0, 120)
+      .slice(0, 200)
       .map(e => ({
         uuid:   e.uuid,
         name:   e.name,
@@ -302,7 +314,18 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
         rarity: rarityLabel(e.system?.rarity),
         price:  priceLabel(e.system?.price),
         priceCp: priceToCp(e.system?.price),
+        packLabel: e.packLabel,
       }));
+  }
+
+  /** Distinct sources present in the index, for the catalog dropdown. */
+  async _browserSourceOptions() {
+    const index = await this._loadBrowserIndex();
+    const seen = new Map();
+    for (const e of index) if (!seen.has(e.pack)) seen.set(e.pack, e.packLabel);
+    return [...seen.entries()]
+      .map(([id, label]) => ({ id, label, selected: this.browserSource === id }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }
 
   /* ── render / listeners ─────────────────────────────────── */
@@ -339,6 +362,13 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
         this._searchTimer = setTimeout(() => this.render(false), 250);
       });
     }
+
+    const sourceEl = this.element.querySelector('[data-browser-source]');
+    if (sourceEl) sourceEl.addEventListener('change', ev => { this.browserSource = ev.currentTarget.value; this.render(false); });
+    const allTypesEl = this.element.querySelector('[data-browser-alltypes]');
+    if (allTypesEl) allTypesEl.addEventListener('change', ev => { this.browserAllTypes = ev.currentTarget.checked; this.render(false); });
+    const anyRarityEl = this.element.querySelector('[data-browser-anyrarity]');
+    if (anyRarityEl) anyRarityEl.addEventListener('change', ev => { this.browserAnyRarity = ev.currentTarget.checked; this.render(false); });
   }
 
   /* ── inventory actions ──────────────────────────────────── */
