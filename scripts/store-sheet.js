@@ -16,7 +16,13 @@
 
 import { priceToCp, cpLabel, effectiveCp, orderFeePct, parsePriceLabelCp, requestTransaction } from './transactions.js';
 
+import { postToN8n } from './core/adapter.js';
+import { Storage } from './core/storage.js';
+import { N8N_BASE, devUrl, isDevMode } from './core/n8n.js';
+import { sanitizeItemDataDnd5e } from './sanitizer.js';
+
 const MODULE_ID = 'Dnd5eStoreGenerator';
+const WIKI_ENDPOINT = `${N8N_BASE}/webhook/dnd5e-wiki-item`;
 const FLAG_KEY  = 'store';
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
@@ -151,6 +157,7 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
       orderItem:     function(ev) { this._onOrderItem(ev); },
       deliverOrder:  function(ev) { this._onDeliverOrder(ev); },
       cancelOrder:   function(ev) { this._onCancelOrder(ev); },
+      fetchWiki:     function()   { this._onFetchWiki(); },
     },
   };
 
@@ -724,6 +731,44 @@ export class StoreSheet extends HandlebarsApplicationMixin(ApplicationV2) {
     }).catch(() => false);
     if (ok) await requestTransaction({ type: 'cancelOrder', journalUuid: this.document.uuid, orderId });
   }
+
+  /* ── wiki fetch: convert an item from the reference wiki ── */
+
+  async _onFetchWiki() {
+    if (!this.isEditable) return;
+    const name = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Fetch item from the wiki' },
+      content: `<div class="form-group"><label>Item name</label><input type="text" name="value" placeholder="e.g. Sunlance" autofocus /></div>
+        <p class="hint">Searches the reference wiki and converts the item for Foundry (1 use). The item is imported into this store for your world only.</p>`,
+      ok: { label: 'Fetch', callback: (_ev, button) => button.form.elements.value.value },
+      rejectClose: false,
+    }).catch(() => null);
+    if (!name || !name.trim()) return;
+
+    const key = new Storage(MODULE_ID).getKey();
+    if (!key) return ui.notifications.warn('Sign in with Patreon in the Store Generator first.');
+
+    ui.notifications.info(`Searching the wiki for "${name.trim()}"…`);
+    try {
+      const endpoint = devUrl(WIKI_ENDPOINT, isDevMode(MODULE_ID));
+      const { response, responseText } = await postToN8n(endpoint, { name: name.trim() }, key);
+      let data;
+      try { data = JSON.parse(responseText); } catch { throw new Error('Invalid response from the converter.'); }
+      if (!response.ok || data?.ok === false) throw new Error(data?.message || `Server returned ${response.status}`);
+      const raw = data.foundryItem || data.item;
+      if (!raw || typeof raw !== 'object') throw new Error('No item data returned.');
+      sanitizeItemDataDnd5e(raw, null);
+      const store = this._getStoreClone();
+      if (store.itemFolderId && game.folders.get(store.itemFolderId)) raw.folder = store.itemFolderId;
+      const item = await Item.create(raw);
+      if (!item) throw new Error('Foundry rejected the converted item.');
+      await this._stockItem(item);
+      ui.notifications.info(`"${item.name}" fetched from the wiki and stocked.`);
+    } catch (err) {
+      ui.notifications.error(`Wiki fetch failed: ${err.message}`);
+    }
+  }
+
 }
 
 /**

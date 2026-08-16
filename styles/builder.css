@@ -1837,3 +1837,5 @@ a.cfer-store-row-price { cursor: pointer; text-decoration: underline dotted; }
 .cfer-store-browser-filters select { flex: 1 1 100%; min-width: 0; }
 .cfer-browser-filter { display: inline-flex; align-items: center; gap: 0.25em; white-space: nowrap; }
 .cfer-browser-filter input[type="number"] { width: 3.5em; }
+
+.cfer-browser-wiki { flex: 1 1 100%; padding: 0.25em 0.5em; font-size: 0.85em; cursor: pointer; }

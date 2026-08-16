@@ -138,6 +138,11 @@
             {{#each browserSources}}<option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>{{/each}}
           </select>
           <label class="cfer-browser-filter"><input type="checkbox" data-browser-alltypes {{#if browserAllTypes}}checked{{/if}} /> All types</label>
+          {{#if editable}}
+            <button type="button" class="cfer-browser-wiki" data-action="fetchWiki" title="Fetch an item from the reference wiki and convert it (1 use)">
+              <i class="fa-solid fa-globe"></i> Fetch from wiki
+            </button>
+          {{/if}}
           <label class="cfer-browser-filter"><input type="checkbox" data-browser-anyrarity {{#if browserAnyRarity}}checked{{/if}} /> Any rarity</label>
         </div>
         <ul class="cfer-store-rows cfer-store-browser-rows">
