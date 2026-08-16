@@ -147,6 +147,17 @@
         </div>
         <ul class="cfer-store-rows cfer-store-browser-rows">
           {{#each browserRows}}
+            {{#if this.wiki}}
+            <li class="cfer-store-row cfer-store-row--wiki" data-item-name="{{this.name}}">
+              <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
+              <span class="cfer-store-row-name" title="{{this.packLabel}}">{{this.name}}</span>
+              <span class="cfer-store-row-level">{{this.rarity}}</span>
+              <span class="cfer-store-row-price">{{this.price}}</span>
+              {{#if ../editable}}
+                <button type="button" class="cfer-icon-btn" data-action="importWikiRow" title="Convert from the wiki and stock (1 use)"><i class="fa-solid fa-download"></i></button>
+              {{/if}}
+            </li>
+            {{else}}
             <li class="cfer-store-row" draggable="true" data-drag-uuid="{{this.uuid}}" data-browser-uuid="{{this.uuid}}" data-price-cp="{{this.priceCp}}" data-item-name="{{this.name}}">
               <img src="{{this.img}}" alt="" class="cfer-store-row-img" />
               <span class="cfer-store-row-name" title="{{this.packLabel}}">{{this.name}}</span>
@@ -159,6 +170,7 @@
                 <button type="button" class="cfer-icon-btn" data-action="addFromBrowser" title="Add to stock now"><i class="fa-solid fa-plus"></i></button>
               {{/if}}
             </li>
+            {{/if}}
           {{else}}
             <li class="cfer-store-empty"><em>No matching items.</em></li>
           {{/each}}
