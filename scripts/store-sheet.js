@@ -21,7 +21,7 @@ const FLAG_KEY  = 'store';
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
-const STORE_TYPE_LABELS = {
+export const STORE_TYPE_LABELS = {
   general:      'General Goods',
   blacksmith:   'Blacksmith / Weaponsmith',
   armorer:      'Armorer',
@@ -102,6 +102,22 @@ export function openStoreSheet(journal) {
   }
   sheet.render(true);
   return sheet;
+}
+
+/** Is this journal one of ours — flagged, folder-linked, or a legacy generated store? */
+export function isStoreJournal(journal) {
+  const flags = journal?.flags?.[MODULE_ID];
+  if (flags?.[FLAG_KEY] || flags?.itemFolderId) return true;
+  const page = journal?.pages?.find?.(p => p.name === 'Store Overview');
+  return !!page && /<h2>\s*(Inventory|Shopkeeper)\s*<\/h2>/i.test(page.text?.content || '');
+}
+
+/** Adopt (if legacy) and open a store journal in the store sheet. */
+export function adoptAndOpenStore(journal) {
+  const store = getStore(journal) || migrateLegacyStore(journal);
+  if (!store) return null;
+  if (!getStore(journal) && game.user.isGM) journal.setFlag(MODULE_ID, FLAG_KEY, store).catch(() => {});
+  return openStoreSheet(journal);
 }
 
 export function getStore(doc) {

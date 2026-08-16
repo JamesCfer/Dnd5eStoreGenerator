@@ -12,6 +12,7 @@ import { Storage }              from './core/storage.js';
 import { Dnd5eStoreAdapter }    from './adapter.js';
 import { StoreSheet, getStore, migrateLegacyStore, openStoreSheet } from './store-sheet.js';
 import { registerStoreSockets } from './transactions.js';
+import { StoresTab, registerStoresTab, registerStoresTabHooks } from './stores-tab.js';
 
 const adapter   = new Dnd5eStoreAdapter();
 const MODULE_ID = adapter.module.id;
@@ -95,6 +96,8 @@ class ClearSessionMenu {
 }
 
 Hooks.once('init', () => {
+  registerStoresTab();
+
   game.settings.register(MODULE_ID, 'devMode', {
     name:   'Developer Mode',
     hint:   'When enabled, all webhook URLs are routed to the -dev endpoints. Disable before going live.',
@@ -144,6 +147,8 @@ Hooks.once('ready', () => {
 
   startHeartbeat(MODULE_ID);
   registerStoreSockets();
+  StoresTab.openGenerator = openFn;
+  registerStoresTabHooks();
 
   const module = game.modules.get(MODULE_ID);
   if (module) module.api = {

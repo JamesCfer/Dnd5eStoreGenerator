@@ -1,0 +1,25 @@
+<div class="cfer-stores-tab">
+  <header class="cfer-stores-tab-header">
+    <h2><i class="fa-solid fa-shop"></i> Stores</h2>
+    {{#if isGM}}
+      <button type="button" data-action="openGenerator" title="Open the Store Generator">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+      </button>
+    {{/if}}
+  </header>
+  <ol class="cfer-stores-list">
+    {{#each stores}}
+      <li class="cfer-stores-entry {{#if this.closed}}is-closed{{/if}}" data-journal-id="{{this.id}}" data-action="openStore" role="button" tabindex="0">
+        <img src="{{this.img}}" alt="" class="cfer-stores-entry-img" />
+        <div class="cfer-stores-entry-text">
+          <span class="cfer-stores-entry-name">{{this.name}}</span>
+          <span class="cfer-stores-entry-meta">{{this.typeLabel}}{{#if this.ownerName}} · {{this.ownerName}}{{/if}}{{#if this.closed}} · Closed{{/if}}</span>
+        </div>
+        {{#if this.orders}}<span class="cfer-stores-entry-orders" title="Open special orders"><i class="fa-solid fa-scroll"></i> {{this.orders}}</span>{{/if}}
+        <span class="cfer-stores-entry-count" title="Items in stock">{{this.itemCount}}</span>
+      </li>
+    {{else}}
+      <li class="cfer-stores-empty"><em>No stores yet.{{#if isGM}} Click Generate to create one.{{/if}}</em></li>
+    {{/each}}
+  </ol>
+</div>

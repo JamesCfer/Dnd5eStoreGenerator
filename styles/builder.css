@@ -1791,3 +1791,43 @@ a.cfer-store-row-price { cursor: pointer; text-decoration: underline dotted; }
   flex: 0 0 auto; font-size: 0.78em; font-style: italic; color: #5a2a7a;
   white-space: nowrap;
 }
+
+/* ── Stores sidebar tab ─────────────────────────────────── */
+
+#sidebar .cfer-stores-tab { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+.cfer-stores-tab-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5em; padding: 0.4em 0.6em;
+  border-bottom: 2px solid #7a2020;
+}
+.cfer-stores-tab-header h2 { margin: 0; border: none; font-size: 1.05em; }
+.cfer-stores-tab-header h2 i { color: #7a2020; margin-right: 0.3em; }
+.cfer-stores-tab-header button {
+  padding: 0.2em 0.6em; font-size: 0.85em; white-space: nowrap; cursor: pointer;
+}
+
+.cfer-stores-list { list-style: none; margin: 0; padding: 0.3em; overflow-y: auto; flex: 1; }
+
+.cfer-stores-entry {
+  display: flex; align-items: center; gap: 0.5em;
+  padding: 0.3em 0.4em; border-radius: 4px; cursor: pointer;
+  border-bottom: 1px solid rgba(120, 120, 120, 0.2);
+}
+.cfer-stores-entry:hover { background: rgba(122, 32, 32, 0.15); }
+.cfer-stores-entry.is-closed { opacity: 0.6; }
+
+.cfer-stores-entry-img {
+  width: 32px; height: 32px; object-fit: cover;
+  border: 1px solid #7a2020; border-radius: 4px; flex: 0 0 auto;
+}
+.cfer-stores-entry-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cfer-stores-entry-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfer-stores-entry-meta { font-size: 0.78em; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfer-stores-entry-count {
+  flex: 0 0 auto; font-size: 0.78em; font-weight: 700;
+  background: #7a2020; color: #fff;
+  border-radius: 999px; padding: 0.1em 0.55em;
+}
+.cfer-stores-entry-orders { flex: 0 0 auto; font-size: 0.75em; opacity: 0.85; }
+.cfer-stores-empty { padding: 1em 0.5em; opacity: 0.7; }
