@@ -266,6 +266,22 @@ import { updateUsageFromResponse } from './usage.js';
  * @param {string} key
  * @returns {Promise<N8nPostResult>}
  */
+/**
+ * Ask the relay for the member's current used/limit numbers. postToN8n
+ * funnels the response through updateUsageFromResponse, so callers only
+ * need to fire this — the usage tracker and every open builder update
+ * themselves. Silent on failure (no key, offline, expired session).
+ */
+export async function refreshUsageFromServer(moduleId) {
+  try {
+    const { Storage } = await import('./storage.js');
+    const { N8N_ENDPOINTS, devUrl, isDevMode } = await import('./n8n.js');
+    const key = new Storage(moduleId).getKey();
+    if (!key) return;
+    await postToN8n(devUrl(N8N_ENDPOINTS.usageCheck, isDevMode(moduleId)), {}, key);
+  } catch (_) { /* usage refresh is best-effort */ }
+}
+
 export async function postToN8n(endpoint, payload, key) {
   const response = await fetch(endpoint, {
     method:  'POST',

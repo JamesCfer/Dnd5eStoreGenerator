@@ -257,20 +257,39 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _updateUsesDisplay() {
     const pill = this.element?.querySelector('.auth-uses-pill');
-    if (!pill) return;
     const { remaining, limit } = getUsage();
-    if (!this.authenticated || remaining === null) {
-      pill.style.display = 'none';
+
+    // Compact pill only when we know the count but not the limit.
+    if (pill) {
+      if (!this.authenticated || remaining === null || limit !== null) {
+        pill.style.display = 'none';
+      } else {
+        const countEl = pill.querySelector('.auth-uses-count');
+        if (countEl) countEl.textContent = `${remaining} uses left`;
+        pill.classList.toggle('auth-uses-pill--low', remaining <= 5);
+        pill.style.display = '';
+      }
+    }
+
+    // Uses meter: green when full, through red as it drains, black at 0.
+    const meter = this.element?.querySelector('.usage-meter');
+    if (!meter) return;
+    if (!this.authenticated || remaining === null || limit === null || !limit) {
+      meter.style.display = 'none';
       return;
     }
-    const countEl = pill.querySelector('.auth-uses-count');
-    if (countEl) {
-      countEl.textContent = limit !== null
-        ? `${remaining} / ${limit} uses left`
-        : `${remaining} uses left`;
+    const frac = Math.max(0, Math.min(1, remaining / limit));
+    const empty = remaining <= 0;
+    const fill = meter.querySelector('.usage-meter-fill');
+    if (fill) {
+      fill.style.width = `${Math.round(frac * 100)}%`;
+      fill.style.background = empty ? '#000' : `hsl(${Math.round(frac * 120)}, 72%, 38%)`;
     }
-    pill.classList.toggle('auth-uses-pill--low', remaining <= 5);
-    pill.style.display = '';
+    meter.classList.toggle('usage-meter--empty', empty);
+    const label = meter.querySelector('.usage-meter-label');
+    if (label) label.textContent = empty ? 'Out of uses this month' : `${remaining} / ${limit} uses left`;
+    meter.title = empty ? 'Monthly allowance spent - resets on the 1st' : 'Generation uses remaining this month';
+    meter.style.display = '';
   }
 
   /* ── Action wiring ──────────────────────────────────────── */
@@ -575,6 +594,8 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _generate(event) {
     event?.preventDefault?.();
+    // Re-sync the uses meter shortly after the generation resolves.
+    setTimeout(() => { import('./adapter.js').then(m => m.refreshUsageFromServer(this.adapter.module.id)).catch(() => {}); }, 8000);
 
     if (!this.authenticated) {
       ui.notifications.warn(game.i18n.localize('NpcBuilder.Generate.NotSignedIn'));

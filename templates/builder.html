@@ -145,6 +145,10 @@
           <button type="button" data-action="signout" class="btn-signout">
             <i class="fa-solid fa-right-from-bracket"></i> Sign Out
           </button>
+          <div class="usage-meter" style="display:none;" role="meter" aria-live="polite">
+            <div class="usage-meter-fill"></div>
+            <span class="usage-meter-label">&mdash;</span>
+          </div>
         </div>
       </div>
 
@@ -261,6 +265,10 @@
       <span>Send Feedback</span>
     </div>
     <div class="feedback-body">
+      <a class="btn-discord" href="https://discord.gg/6AJxmtjZvX" target="_blank" rel="noopener"
+         title="Join the community Discord">
+        <i class="fa-brands fa-discord"></i><span>Discord</span>
+      </a>
       <textarea class="feedback-textarea" placeholder="Found a bug? Have a suggestion? Let us know…" rows="2"></textarea>
       <button type="button" data-action="sendfeedback" class="feedback-send-btn">
         <i class="fa-solid fa-paper-plane"></i>

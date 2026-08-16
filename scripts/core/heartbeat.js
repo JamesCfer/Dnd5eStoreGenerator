@@ -51,6 +51,9 @@ async function sendHeartbeat(moduleId) {
  * module's `ready` hook; subsequent calls for the same module are no-ops.
  */
 export function startHeartbeat(moduleId) {
+  // Refresh the uses-remaining display once per login.
+  import('./adapter.js').then(m => m.refreshUsageFromServer(moduleId)).catch(() => {});
+
   if (!moduleId || startedModules.has(moduleId)) return;
   startedModules.add(moduleId);
   sendHeartbeat(moduleId);
