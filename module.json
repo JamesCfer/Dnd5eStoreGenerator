@@ -35,7 +35,7 @@
       }
     ]
   },
-  "version": "3.3.3",
+  "version": "3.3.5",
   "manifest": "https://github.com/JamesCfer/Dnd5eStoreGenerator/releases/download/latest/module.json",
   "download": "https://github.com/JamesCfer/Dnd5eStoreGenerator/releases/download/latest/Dnd5eStoreGenerator.zip"
 }
