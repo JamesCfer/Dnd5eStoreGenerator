@@ -1496,6 +1496,53 @@
 }
 .application.npc-builder .btn-discord:hover { filter: brightness(1.12); color: #fff; }
 .application.npc-builder .btn-discord i { font-size: 1.15em; }
+
+/* ── Sheet-injected "Generate Image" button ─────────────────
+   Mounted under a sheet's portrait (see core/sheet-image-button.js) and only
+   while the document still has its default artwork. Kept deliberately small
+   so it never squeezes the rest of the sheet header. */
+
+.npc-builder-image-slot {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+}
+
+button.npc-builder-sheet-image-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0.12em 0.35em;
+  border: 1px solid #1b5e20;
+  border-radius: 3px;
+  background: #2e7d32;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: filter 0.12s;
+}
+button.npc-builder-sheet-image-btn:hover { filter: brightness(1.15); color: #fff; }
+button.npc-builder-sheet-image-btn i { font-size: 0.9em; }
+button.npc-builder-sheet-image-btn .btn-image-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* ============================================================
    D&D Store Generator — Trading Hall accents
    Burgundy awnings, aged gold, deep oak — a market-day cousin
