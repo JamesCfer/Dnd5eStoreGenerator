@@ -1543,6 +1543,312 @@ button.npc-builder-sheet-image-btn .btn-image-label {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Home: monthly allowance explainer ──────────────────── */
+.application.npc-builder .home-uses,
+.application.npc-builder .home-tips {
+  background: #fff;
+  border: 1px solid rgba(124, 92, 191, 0.28);
+  border-radius: 7px;
+  padding: 0.85em 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.application.npc-builder .home-uses-header,
+.application.npc-builder .home-tips-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: #5a3ea0;
+}
+.application.npc-builder .home-uses-header i,
+.application.npc-builder .home-tips-header i { font-size: 1.15em; }
+.application.npc-builder .home-uses-header h3,
+.application.npc-builder .home-tips-header h3 {
+  margin: 0;
+  font-size: 1.02em;
+  font-weight: 700;
+  color: #333;
+  border: none;
+}
+
+.application.npc-builder .home-uses-status {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.6em 0.75em;
+  border-radius: 6px;
+  background: #f3f0fa;
+  border: 1px solid rgba(124, 92, 191, 0.2);
+  font-size: 0.88em;
+  color: #444;
+  line-height: 1.45;
+}
+.application.npc-builder .home-uses-status i { color: #7c5cbf; font-size: 1.2em; }
+
+.application.npc-builder .home-uses-status--signed { align-items: stretch; }
+.application.npc-builder .home-uses-status--empty {
+  background: rgba(204, 32, 48, 0.07);
+  border-color: rgba(204, 32, 48, 0.35);
+}
+
+.application.npc-builder .home-uses-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5em;
+  padding-right: 0.75em;
+  border-right: 1px solid rgba(124, 92, 191, 0.25);
+}
+.application.npc-builder .home-uses-remaining {
+  font-size: 1.75em;
+  font-weight: 700;
+  line-height: 1;
+  color: #5a3ea0;
+}
+.application.npc-builder .home-uses-status--empty .home-uses-remaining { color: #cc2030; }
+.application.npc-builder .home-uses-of {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #777;
+}
+
+.application.npc-builder .home-uses-detail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2em;
+}
+.application.npc-builder .home-uses-tier { font-weight: 700; color: #333; }
+.application.npc-builder .home-uses-reset { font-size: 0.92em; color: #666; }
+
+.application.npc-builder .home-uses-explain {
+  margin: 0;
+  font-size: 0.85em;
+  color: #555;
+  line-height: 1.5;
+}
+
+.application.npc-builder .home-costs,
+.application.npc-builder .home-tiers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.application.npc-builder .home-costs th,
+.application.npc-builder .home-tiers-table th,
+.application.npc-builder .home-costs td,
+.application.npc-builder .home-tiers-table td {
+  text-align: left;
+  padding: 0.35em 0.5em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.application.npc-builder .home-costs thead th,
+.application.npc-builder .home-tiers-table thead th {
+  font-size: 0.92em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a3ea0;
+  background: rgba(124, 92, 191, 0.07);
+}
+.application.npc-builder .home-costs-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.application.npc-builder .home-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55em;
+}
+.application.npc-builder .home-tiers-title {
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a3ea0;
+}
+.application.npc-builder .home-tier-row--free td,
+.application.npc-builder .home-tier-row--free th { color: #777; }
+.application.npc-builder .home-tier-row--current {
+  background: rgba(124, 92, 191, 0.1);
+}
+.application.npc-builder .home-tier-row--current th,
+.application.npc-builder .home-tier-row--current td { color: #333; }
+.application.npc-builder .home-tier-current {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: #5a3ea0;
+  color: #fff;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+.application.npc-builder .home-tier-allowance { color: #666; }
+.application.npc-builder .home-tiers-note {
+  margin: 0;
+  font-size: 0.82em;
+  color: #666;
+  line-height: 1.45;
+}
+
+.application.npc-builder .home-uses-cta {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.5em 1em;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #ff5a63 0%, #e03340 100%);
+  color: #fff;
+  border: 1px solid rgba(170, 25, 35, 0.55);
+  box-shadow: 0 2px 6px rgba(255, 66, 77, 0.3);
+  font-size: 0.9em;
+  font-weight: 700;
+  text-decoration: none;
+  transition: filter 0.12s;
+}
+.application.npc-builder .home-uses-cta:hover {
+  filter: brightness(1.08);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ── Home: discoverability tips ─────────────────────────── */
+.application.npc-builder .home-tips-list {
+  margin: 0;
+  padding-left: 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  font-size: 0.86em;
+  color: #444;
+  line-height: 1.5;
+}
+.application.npc-builder .home-tips-list strong { color: #333; }
+.application.npc-builder .home-tips-list em { color: #5a3ea0; font-style: normal; font-weight: 600; }
+
+.application.npc-builder kbd {
+  display: inline-block;
+  padding: 0 0.35em;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: #f5f5f5;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Flash the section that a "How uses work" link jumped to. */
+.application.npc-builder .home-section--flash {
+  animation: npc-home-flash 1.6s ease-out;
+}
+@keyframes npc-home-flash {
+  0%, 100% { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); }
+  15%      { box-shadow: 0 0 0 3px rgba(124, 92, 191, 0.55); }
+}
+
+/* ── Builder: uses help + low-allowance upsell ──────────── */
+.application.npc-builder .usage-row {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 6px;
+}
+.application.npc-builder .usage-row .usage-meter { flex: 1 1 auto; margin-top: 0; }
+
+.application.npc-builder .usage-help-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0 0.3em;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font-size: 1em;
+  line-height: 1;
+}
+.application.npc-builder .usage-help-btn:hover { color: #fff; }
+
+.application.npc-builder .auth-unsigned-hint {
+  display: block;
+  margin-top: 0.15em;
+  font-size: 0.82em;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.application.npc-builder button.link-to-home {
+  width: auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.application.npc-builder button.link-to-home:hover { filter: brightness(1.15); }
+
+.application.npc-builder .uses-upsell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+  margin-bottom: 0.75em;
+  padding: 0.6em 0.8em;
+  border-radius: 6px;
+  border: 1px solid rgba(240, 180, 41, 0.55);
+  border-left: 4px solid #f0b429;
+  background: rgba(255, 193, 7, 0.12);
+  font-size: 0.86em;
+  line-height: 1.45;
+}
+.application.npc-builder .uses-upsell--empty {
+  border-color: rgba(204, 32, 48, 0.5);
+  border-left-color: #cc2030;
+  background: rgba(204, 32, 48, 0.09);
+}
+
+.application.npc-builder .uses-upsell-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+  flex: 1 1 16em;
+}
+.application.npc-builder .uses-upsell-icon { color: #e0a300; font-size: 1.1em; margin-top: 0.15em; }
+.application.npc-builder .uses-upsell--empty .uses-upsell-icon { color: #cc2030; }
+
+.application.npc-builder .uses-upsell-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+.application.npc-builder .uses-upsell-headline { font-weight: 700; }
+.application.npc-builder .uses-upsell-detail { opacity: 0.85; }
+
+.application.npc-builder .uses-upsell-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  flex: 0 0 auto;
+}
+.application.npc-builder .uses-upsell-cta { padding: 0.35em 0.8em; font-size: 0.95em; }
 /* ============================================================
    D&D Store Generator — Trading Hall accents
    Burgundy awnings, aged gold, deep oak — a market-day cousin
@@ -1933,7 +2239,6 @@ a.cfer-store-row-price { cursor: pointer; text-decoration: underline dotted; }
 .cfer-browser-filter { display: inline-flex; align-items: center; gap: 0.25em; white-space: nowrap; }
 .cfer-browser-filter input[type="number"] { width: 3.5em; }
 
-.cfer-browser-wiki { flex: 1 1 100%; padding: 0.25em 0.5em; font-size: 0.85em; cursor: pointer; }
 
 /* ── staff cards ────────────────────────────────────────── */
 

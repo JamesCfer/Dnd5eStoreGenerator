@@ -34,30 +34,141 @@
         <ol class="home-instructions-steps">
           <li>
             <strong>Sign in with Patreon.</strong>
-            Click <em>Sign in with Patreon</em> in the builder to authenticate.
+            Open the <i class="{{module.icon}}"></i> {{module.label}} tab and click
+            <em>Sign in with Patreon</em>. A browser window opens; approve it and come back.
+            Signing in is what gives you your monthly generation allowance.
           </li>
           <li>
-            <strong>Open the <i class="{{module.icon}}"></i> {{module.label}} tab</strong> at the top of this window to reach the form.
+            <strong>Pick a quick template, or write your own description.</strong>
+            The <em>Quick template…</em> dropdown above the description box fills in a
+            worked example you can edit. Detail pays off: mention role, temperament,
+            equipment, and how you intend to use the {{documentNoun}} at the table.
           </li>
           <li>
-            <strong>Describe your {{documentNoun}}.</strong>
-            Fill in a name, level, and description — the more detail you provide, the better the result.
+            <strong>Set the mechanical fields.</strong>
+            Name and level (or CR) steer the stat block. Leave a field blank and the
+            generator picks something sensible for you.
           </li>
           <li>
-            <strong>Click Generate.</strong>
-            Your new {{documentNoun}} is added to Foundry and appears in the history panel on the right.
+            <strong>Click Generate</strong> (or press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>).
+            The badge on the button shows what it costs against your monthly allowance.
+            Your {{documentNoun}} is created in Foundry and its sheet opens.
+          </li>
+          <li>
+            <strong>Tweak and reuse.</strong>
+            Every generation is logged in the history panel on the right. Click an entry
+            to load its settings back into the form, then change one detail and go again.
           </li>
         </ol>
         <p class="home-instructions-tip">
           <i class="fa-solid fa-lightbulb"></i>
-          Click any past entry in the history panel to re-populate the form and tweak it.
+          Failed generations are not charged. If something breaks, the history entry keeps
+          a <strong>Retry</strong> button, and the Send Feedback box at the bottom of the
+          window reports it to us with the error attached.
         </p>
       </div>
 
+      <!-- Monthly allowance: where you stand, and how to get more -->
+      <div class="home-uses">
+        <div class="home-uses-header">
+          <i class="fa-solid fa-bolt"></i>
+          <h3>Your monthly uses</h3>
+        </div>
+
+        <div class="home-uses-status" data-signed-out>
+          <i class="fa-solid fa-circle-user"></i>
+          <span>Sign in with Patreon to see your allowance. Everyone gets
+            <strong>{{freePlan.uses}} uses a month</strong> for free.</span>
+        </div>
+
+        <div class="home-uses-status home-uses-status--signed" data-signed-in style="display:none;">
+          <div class="home-uses-figure">
+            <span class="home-uses-remaining">—</span>
+            <span class="home-uses-of">uses left</span>
+          </div>
+          <div class="home-uses-detail">
+            <div class="home-uses-tier">Checking your tier…</div>
+            <div class="home-uses-reset"></div>
+          </div>
+        </div>
+
+        <p class="home-uses-explain">
+          A "use" is the unit the generators spend. Your allowance refills on the 1st of
+          every month, and unspent uses do not roll over.
+        </p>
+
+        <table class="home-costs">
+          <thead>
+            <tr><th scope="col">What you generate</th><th scope="col">Uses</th></tr>
+          </thead>
+          <tbody>
+            {{#each actionCosts}}
+            <tr><td>{{label}}</td><td class="home-costs-num">{{cost}}</td></tr>
+            {{/each}}
+          </tbody>
+        </table>
+
+        <div class="home-tiers">
+          <div class="home-tiers-title">Tiers, and what each one gives you per month</div>
+          <table class="home-tiers-table">
+            <thead>
+              <tr>
+                <th scope="col">Tier</th>
+                <th scope="col">Uses</th>
+                <th scope="col">Roughly</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each tierPlans}}
+              <tr data-tier="{{id}}" class="home-tier-row{{#if isFree}} home-tier-row--free{{/if}}">
+                <th scope="row">
+                  {{label}}
+                  <span class="home-tier-current" style="display:none;">you</span>
+                </th>
+                <td class="home-costs-num">{{uses}}</td>
+                <td class="home-tier-allowance">{{allowance}}</td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+          <p class="home-tiers-note">
+            Every module in the family draws on the same allowance, so one pledge covers
+            all of them. Pledge amounts and tier perks are listed on the Patreon page.
+          </p>
+          <a href="{{patreonUrl}}" target="_blank" rel="noopener noreferrer" class="home-uses-cta">
+            <i class="fa-brands fa-patreon"></i> Get more uses on Patreon
+          </a>
+        </div>
+      </div>
+
+      <!-- Things people miss -->
+      <div class="home-tips">
+        <div class="home-tips-header">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <h3>Getting more out of the builder</h3>
+        </div>
+        <ul class="home-tips-list">
+          <li><strong>Suggest a name.</strong> The dice button beside the Name field invents
+            a thematic name from your description, and costs nothing.</li>
+          <li><strong>Undo Last Generation.</strong> The button under the form deletes the
+            most recent creation if it came out wrong. It does not refund the use.</li>
+          <li><strong>Filter the history.</strong> The search box above the history list
+            matches on name, and the <i class="fa-solid fa-angles-right"></i> button collapses
+            the panel when you want more room for the form.</li>
+          <li><strong>Keyboard.</strong> <kbd>Ctrl</kbd>+<kbd>Enter</kbd> generates,
+            <kbd>Esc</kbd> clears the form.</li>
+          <li><strong>Portraits from a sheet.</strong> Any actor sheet gets a
+            <em>Generate Image</em> button, so you can add art to something you made
+            earlier without regenerating it.</li>
+          <li><strong>Art style.</strong> Set one below and every portrait follows it.</li>
+        </ul>
+      </div>
+
       <p class="home-intro">
-        You're using <strong>{{module.label}}</strong>. The CferNpcMaker family ships
+        You are using <strong>{{module.label}}</strong>. The CferNpcMaker family ships
         a separate Foundry module for each system so each install only contains the
-        code it needs. Install any of the others to round out your toolset.
+        code it needs. Install any of the others to round out your toolset; they share
+        your sign-in and your monthly allowance.
       </p>
 
       <div class="home-modules-grid">
@@ -98,7 +209,7 @@
         <a href="https://discord.gg/6AJxmtjZvX" target="_blank" rel="noopener noreferrer" class="btn-discord">
           <i class="fa-brands fa-discord"></i> Join our Discord
         </a>
-        <a href="https://www.patreon.com/cw/CelestiaTools" target="_blank" rel="noopener noreferrer" class="btn-patreon-link">
+        <a href="{{patreonUrl}}" target="_blank" rel="noopener noreferrer" class="btn-patreon-link">
           <i class="fa-brands fa-patreon"></i> Support on Patreon
         </a>
       </div>
@@ -122,7 +233,10 @@
         <div class="auth-unsigned">
           <div class="auth-unsigned-text">
             <i class="fa-brands fa-patreon auth-patreon-icon"></i>
-            <span>Sign in with Patreon to use this module</span>
+            <span>
+              Sign in with Patreon to use this module
+              <small class="auth-unsigned-hint">Free to sign in, and includes {{freePlan.uses}} generation uses a month. <button type="button" class="link-to-home" data-home-target="home-uses">How uses work</button></small>
+            </span>
           </div>
           <div class="auth-unsigned-actions">
             <button type="button" data-action="signin" class="btn-patreon">
@@ -145,10 +259,33 @@
           <button type="button" data-action="signout" class="btn-signout">
             <i class="fa-solid fa-right-from-bracket"></i> Sign Out
           </button>
-          <div class="usage-meter" style="display:none;" role="meter" aria-live="polite">
-            <div class="usage-meter-fill"></div>
-            <span class="usage-meter-label">&mdash;</span>
+          <div class="usage-row" style="display:none;">
+            <div class="usage-meter" role="meter" aria-live="polite">
+              <div class="usage-meter-fill"></div>
+              <span class="usage-meter-label">&mdash;</span>
+            </div>
+            <button type="button" class="usage-help-btn" data-home-target="home-uses"
+                    title="What counts as a use, and how to get more" aria-label="Explain monthly uses">
+              <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+            </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Allowance running out: explain the reset and offer the next tier up -->
+      <div class="uses-upsell" style="display:none;" role="status" aria-live="polite">
+        <div class="uses-upsell-main">
+          <i class="fa-solid fa-bolt uses-upsell-icon" aria-hidden="true"></i>
+          <div class="uses-upsell-text">
+            <span class="uses-upsell-headline"></span>
+            <span class="uses-upsell-detail"></span>
+          </div>
+        </div>
+        <div class="uses-upsell-actions">
+          <button type="button" class="link-to-home" data-home-target="home-uses">See how uses work</button>
+          <a href="{{patreonUrl}}" target="_blank" rel="noopener noreferrer" class="btn-patreon-link uses-upsell-cta">
+            <i class="fa-brands fa-patreon"></i> <span class="uses-upsell-cta-label">Get more uses</span>
+          </a>
         </div>
       </div>
 

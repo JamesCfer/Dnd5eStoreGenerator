@@ -33,10 +33,17 @@ import { generateImage,
          IMAGE_COST }             from './image-gen.js';
 import { isDevMode }              from './n8n.js';
 import { getUsage,
+         setUsage,
          clearUsage,
          onUsageChange }          from './usage.js';
 import { ALL_MODULES,
          getModuleMeta }          from './home-data.js';
+import { TIER_PLANS,
+         ACTION_COSTS,
+         getPlan,
+         publicPlans,
+         nextPlanUp,
+         describeAllowance }      from './plans.js';
 import { escapeHtml,
          detectModuleFolder,
          generateThematicName }   from './utils.js';
@@ -62,8 +69,13 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.lastDocument   = null;
     this.lastExportData = null;     // adapter-defined: { content, filename, mimeType }
     this._isOffline     = !navigator.onLine;
-    // Default to the builder form — users reach the Home tab by clicking it.
-    this.activeTab      = (initialTab === 'home' || initialTab === 'builder') ? initialTab : 'builder';
+    // Default to the builder form, except on a first run: a new user lands on
+    // Home so the instructions and the allowance explainer get read once.
+    const firstRun = !this.storage.getIntroSeen();
+    this.activeTab = (initialTab === 'home' || initialTab === 'builder')
+      ? initialTab
+      : (firstRun ? 'home' : 'builder');
+    if (firstRun) this.storage.setIntroSeen(true);
     this.selectedHistoryId = null;
     this.patreonTier    = null;
 
@@ -93,6 +105,9 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
       module:        this.adapter.module,
       documentNoun:  this.adapter.formConfig?.documentNoun || 'document',
       patreonUrl:    PATREON_URL,
+      freePlan:      TIER_PLANS[0],
+      actionCosts:   ACTION_COSTS,
+      tierPlans:     publicPlans().map(p => ({ ...p, allowance: describeAllowance(p.uses) })),
       homeModules:   ALL_MODULES
         .filter(m => {
           if (m.id === currentId) return true;
@@ -174,6 +189,14 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
       nameLabel.appendChild(suggestBtn);
     }
 
+    for (const link of this.element.querySelectorAll('[data-home-target]')) {
+      link.addEventListener('click', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this._showHomeSection(link.dataset.homeTarget);
+      });
+    }
+
     this._initOfflineDetection();
 
     // Keep the "uses left" pill in the auth banner up to date.
@@ -226,6 +249,22 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._applyAuthStateUI();
   }
 
+  /**
+   * Switch to the Home tab and bring one of its sections into view — used by
+   * the "How uses work" links in the builder panel.
+   *
+   * @param {string} sectionClass  Class name of the target section.
+   */
+  _showHomeSection(sectionClass) {
+    this.activeTab = 'home';
+    this._applyTabUI();
+    const section = this.element?.querySelector(`.${sectionClass}`);
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.classList.add('home-section--flash');
+    setTimeout(() => section.classList.remove('home-section--flash'), 1600);
+  }
+
   /* ── Auth state UI ──────────────────────────────────────── */
 
   _applyAuthStateUI() {
@@ -257,7 +296,10 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _updateUsesDisplay() {
     const pill = this.element?.querySelector('.auth-uses-pill');
-    const { remaining, limit } = getUsage();
+    const { remaining, limit, tier, resetAt } = getUsage();
+    if (tier) this.patreonTier = getPlan(tier).label;
+    this._updateHomeUses(remaining, limit, tier, resetAt);
+    this._updateUsesUpsell(remaining, limit, tier, resetAt);
 
     // Compact pill only when we know the count but not the limit.
     if (pill) {
@@ -273,8 +315,10 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // Uses meter: green when full, through red as it drains, black at 0.
     const meter = this.element?.querySelector('.usage-meter');
+    const row   = this.element?.querySelector('.usage-row');
     if (!meter) return;
     if (!this.authenticated || remaining === null || limit === null || !limit) {
+      if (row) row.style.display = 'none';
       meter.style.display = 'none';
       return;
     }
@@ -290,6 +334,117 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (label) label.textContent = empty ? 'Out of uses this month' : `${remaining} / ${limit} uses left`;
     meter.title = empty ? 'Monthly allowance spent - resets on the 1st' : 'Generation uses remaining this month';
     meter.style.display = '';
+    if (row) row.style.display = '';
+  }
+
+  /* ── Home tab: live allowance card ──────────────────────── */
+
+  _updateHomeUses(remaining, limit, tier, resetAt) {
+    const root = this.element;
+    if (!root) return;
+
+    const signedOut = root.querySelector('.home-uses-status[data-signed-out]');
+    const signedIn  = root.querySelector('.home-uses-status[data-signed-in]');
+    if (!signedIn || !signedOut) return;
+
+    const known = this.authenticated && remaining !== null;
+    signedOut.style.display = known ? 'none' : '';
+    signedIn.style.display  = known ? '' : 'none';
+
+    if (known) {
+      const plan = getPlan(tier);
+      const countEl = signedIn.querySelector('.home-uses-remaining');
+      if (countEl) countEl.textContent = String(remaining);
+      signedIn.classList.toggle('home-uses-status--empty', remaining <= 0);
+
+      const tierEl = signedIn.querySelector('.home-uses-tier');
+      if (tierEl) {
+        const total = limit ?? plan.uses;
+        tierEl.textContent = `${plan.label} tier: ${total} uses a month`;
+      }
+
+      const resetEl = signedIn.querySelector('.home-uses-reset');
+      if (resetEl) resetEl.textContent = this._describeReset(resetAt);
+    }
+
+    for (const row of root.querySelectorAll('.home-tier-row')) {
+      const isCurrent = known && row.dataset.tier === getPlan(tier).id;
+      row.classList.toggle('home-tier-row--current', isCurrent);
+      const badge = row.querySelector('.home-tier-current');
+      if (badge) badge.style.display = isCurrent ? '' : 'none';
+    }
+  }
+
+  /* ── Builder tab: low-allowance upsell ──────────────────── */
+
+  _updateUsesUpsell(remaining, limit, tier, resetAt) {
+    const panel = this.element?.querySelector('.uses-upsell');
+    if (!panel) return;
+
+    const cost = this._generationCost();
+    const total = limit ?? getPlan(tier).uses;
+    // Warn on the last fifth of the allowance, but never before the point where
+    // one more generation is in doubt.
+    const threshold = Math.max(cost, Math.ceil(total * 0.2));
+    const show = this.authenticated && remaining !== null && remaining <= threshold;
+    if (!show) {
+      panel.style.display = 'none';
+      return;
+    }
+
+    const empty = remaining < cost;
+    const plan  = getPlan(tier);
+    const next  = nextPlanUp(tier);
+    const reset = this._describeReset(resetAt);
+
+    panel.classList.toggle('uses-upsell--empty', empty);
+
+    const headline = panel.querySelector('.uses-upsell-headline');
+    if (headline) {
+      const left = remaining === 1 ? '1 use' : `${remaining} uses`;
+      headline.textContent = empty
+        ? (remaining <= 0
+            ? 'You are out of uses this month.'
+            : `Only ${left} left. This builder charges ${cost} per generation.`)
+        : `${left} left on the ${plan.label} tier.`;
+    }
+
+    const detail = panel.querySelector('.uses-upsell-detail');
+    if (detail) {
+      const parts = [];
+      if (reset) parts.push(reset);
+      if (next) parts.push(`The ${next.label} tier gives you ${next.uses} a month (${describeAllowance(next.uses)}).`);
+      else if (limit) parts.push(`You are already on the top tier at ${limit} uses a month.`);
+      detail.textContent = parts.join(' ');
+    }
+
+    const ctaLabel = panel.querySelector('.uses-upsell-cta-label');
+    if (ctaLabel) ctaLabel.textContent = next ? `Upgrade to ${next.label}` : 'View Patreon';
+
+    panel.style.display = '';
+  }
+
+  /**
+   * Uses charged per generation in this builder, read from the cost badge the
+   * form already declares (1 for NPCs and items, 7 for stores).
+   * @returns {number}
+   */
+  _generationCost() {
+    const badge = this.element?.querySelector('button[data-action="generate"] .btn-cost-badge');
+    const n = Number.parseInt(badge?.textContent ?? '', 10);
+    return Number.isFinite(n) && n > 0 ? n : ACTION_COSTS[0].cost;
+  }
+
+  /**
+   * @param {number|null} resetAt  Epoch ms the allowance refills.
+   * @returns {string} A sentence about the reset, or '' when it is unknown.
+   */
+  _describeReset(resetAt) {
+    if (!resetAt) return 'Your allowance refills on the 1st of the month.';
+    const days = Math.max(0, Math.ceil((resetAt - Date.now()) / 86400000));
+    if (days <= 0) return 'Your allowance refills today.';
+    if (days === 1) return 'Your allowance refills tomorrow.';
+    return `Your allowance refills in ${days} days.`;
   }
 
   /* ── Action wiring ──────────────────────────────────────── */
@@ -706,7 +861,8 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
           msg += ` Resets in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}.`;
         }
         ui.notifications.error(msg, { permanent: true });
-        setTimeout(() => window.open(PATREON_URL, '_blank'), 1200);
+        setUsage(0, null, err.tier ?? null, err.resetAt ?? null);
+        this._showHomeSection('home-uses');
       } else if (err instanceof ActorCreationError) {
         this._updateHistoryEntry(historyEntry.id, { status: 'error', error: err.message });
         ui.notifications.error(game.i18n.format('NpcBuilder.Create.Failed', { name: formData.name || 'document', error: err.message }));
@@ -908,7 +1064,13 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this.authenticated = false;
       this._applyAuthStateUI();
       ui.notifications?.warn?.(game.i18n.localize('NpcBuilder.Session.Expired'), { permanent: true });
+      return;
     }
+    // validate alone does not report the tier or the reset date; the usage
+    // endpoint does, and the home tab explains both.
+    import('./adapter.js')
+      .then(m => m.refreshUsageFromServer(this.adapter.module.id))
+      .catch(() => {});
   }
 
   /* ── Export ─────────────────────────────────────────────── */

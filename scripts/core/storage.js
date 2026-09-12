@@ -15,6 +15,7 @@ export class Storage {
     this.historyKey  = `${moduleFolder}.history`;
     this.versionKey  = `${moduleFolder}.module-version`;
     this.artStyleKey = `${moduleFolder}.art-style`;
+    this.introKey    = `${moduleFolder}.intro-seen`;
   }
 
   /* ── Patreon session key ────────────────────────────────── */
@@ -91,6 +92,21 @@ export class Storage {
     try { localStorage.setItem(this.artStyleKey, style); } catch (_) {}
   }
 
+  /* ── First-run intro ────────────────────────────────────── */
+
+  /** @returns {boolean} True once the builder has been opened before. */
+  getIntroSeen() {
+    try { return localStorage.getItem(this.introKey) === '1'; } catch (_) { return false; }
+  }
+
+  /** @param {boolean} seen */
+  setIntroSeen(seen) {
+    try {
+      if (seen) localStorage.setItem(this.introKey, '1');
+      else localStorage.removeItem(this.introKey);
+    } catch (_) {}
+  }
+
   /* ── Clear all module storage ───────────────────────────── */
 
   /** Removes every key stored under this module's namespace. */
@@ -101,6 +117,7 @@ export class Storage {
       this.historyKey,
       this.versionKey,
       this.artStyleKey,
+      this.introKey,
     ];
     for (const k of keys) {
       try { localStorage.removeItem(k); } catch (_) {}
