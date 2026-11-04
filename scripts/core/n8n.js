@@ -13,6 +13,7 @@ export const N8N_ENDPOINTS = {
   image:        `${N8N_BASE}/webhook/npc-image`,
   heartbeat:    `${N8N_BASE}/webhook/heartbeat`,
   usageCheck:   `${N8N_BASE}/webhook/usage-check`,
+  mapBuilder:   `${N8N_BASE}/webhook/map-builder`,
 };
 
 export const PATREON_URL = 'https://www.patreon.com/cw/CelestiaTools';

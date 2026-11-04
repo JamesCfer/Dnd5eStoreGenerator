@@ -1276,7 +1276,7 @@ function getAppClass(adapter) {
       {
         id:      `${folder}-app`,
         classes: [...baseClasses, `module-${folder}`],
-        window:  { title: `${adapter.module.label} Builder` },
+        window:  { title: adapter.windowTitle || `${adapter.module.label} Builder` },
       },
       { inplace: false }
     );

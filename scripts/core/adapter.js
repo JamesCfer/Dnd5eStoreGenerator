@@ -282,7 +282,7 @@ export async function refreshUsageFromServer(moduleId) {
   } catch (_) { /* usage refresh is best-effort */ }
 }
 
-export async function postToN8n(endpoint, payload, key) {
+export async function postToN8n(endpoint, payload, key, { signal } = {}) {
   const response = await fetch(endpoint, {
     method:  'POST',
     headers: {
@@ -291,6 +291,7 @@ export async function postToN8n(endpoint, payload, key) {
       'X-Foundry-Origin': window.location.origin,
     },
     body: JSON.stringify(payload),
+    signal,
   });
 
   const responseText = await response.text();

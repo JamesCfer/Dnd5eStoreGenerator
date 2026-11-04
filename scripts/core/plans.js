@@ -39,6 +39,17 @@ export const ACTION_COSTS = [
   { id: 'generation', label: 'NPC, creature, or item', cost: 1 },
   { id: 'store',      label: 'Store (shopkeeper + stock)', cost: 7 },
   { id: 'image',      label: 'AI portrait', cost: 4 },
+  { id: 'map-mockups', label: 'Map mockups (four)', cost: 3 },
+  { id: 'map-mockups-1', label: 'Map mockup (one)', cost: 1 },
+  { id: 'map-mockups-2', label: 'Map mockups (two)', cost: 2 },
+  { id: 'map-final',   label: 'Final map', cost: 6 },
+  { id: 'map-final-economy', label: 'Final map (economy)', cost: 4 },
+  { id: 'map-final-draft', label: 'Final map (draft)', cost: 2 },
+  { id: 'map-final-high', label: 'Final map (high detail)', cost: 6 },
+    { id: 'map-walls', label: 'Walls and lighting', cost: 1 },
+    { id: 'map-edit', label: 'Map region edit', cost: 4 },
+    { id: 'map-edit-high', label: 'Map region edit (high detail)', cost: 6 },
+    { id: 'map-retrace', label: 'Re-trace walls and lights', cost: 1 },
 ];
 
 /**
@@ -82,7 +93,7 @@ export function nextPlanUp(tier) {
  */
 export function describeAllowance(uses) {
   const parts = ACTION_COSTS
-    .filter(a => a.id !== 'image')
+    .filter(a => a.id === 'generation' || a.id === 'store')
     .map(a => ({ n: Math.floor(uses / a.cost), noun: a.id === 'store' ? 'stores' : 'NPCs or items' }))
     .filter(p => p.n > 0)
     .map(p => `${p.n} ${p.noun}`);

@@ -57,6 +57,11 @@ const DIR_HOOKS = {
     ],
     appNames: ['JournalDirectory', 'JournalDirectoryPF2e'],
   },
+  scenes: {
+    headerHooks: ['getHeaderControlsSceneDirectory'],
+    renderHooks: ['renderSceneDirectory'],
+    appNames: ['SceneDirectory'],
+  },
 };
 
 /**
