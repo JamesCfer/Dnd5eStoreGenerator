@@ -1849,6 +1849,69 @@ button.npc-builder-sheet-image-btn .btn-image-label {
   flex: 0 0 auto;
 }
 .application.npc-builder .uses-upsell-cta { padding: 0.35em 0.8em; font-size: 0.95em; }
+
+/* ── Cross-promotion: home section, builder strip, settings menu ──── */
+.application.npc-builder .home-more { margin: 1em 0; }
+.application.npc-builder .home-module-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  flex-wrap: wrap;
+}
+.application.npc-builder button.home-module-install {
+  width: auto;
+  border: none;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.application.npc-builder .home-module-details { font-size: 0.78em; }
+.application.npc-builder .home-module-current-badge--off {
+  background: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+.application.npc-builder .home-module-card.card--maps { border-color: rgba(52, 110, 140, 0.5); }
+.application.npc-builder .home-module-card.card--maps .home-module-icon i { color: #346e8c; }
+
+.application.npc-builder .promo-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  margin-top: 0.75em;
+  padding: 0.45em 0.7em;
+  border-radius: 6px;
+  border: 1px dashed rgba(0, 0, 0, 0.18);
+  font-size: 0.8em;
+  color: #555;
+}
+.application.npc-builder .promo-strip-text { flex: 1; line-height: 1.4; }
+.application.npc-builder .promo-strip-label { opacity: 0.75; margin-right: 0.2em; }
+.application.npc-builder button.promo-strip-dismiss {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0.1em 0.35em;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+}
+.application.npc-builder button.promo-strip-dismiss:hover { color: #333; }
+
+.cfer-promo-window .cfer-promo { padding: 0.25em 0.5em 0.75em; }
+.cfer-promo-window .cfer-promo-list { list-style: none; margin: 0.5em 0 0; padding: 0; }
+.cfer-promo-window .cfer-promo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  padding: 0.55em 0;
+  border-top: 1px solid rgba(127, 127, 127, 0.25);
+}
+.cfer-promo-window .cfer-promo-item > i { font-size: 1.3em; width: 1.4em; text-align: center; }
+.cfer-promo-window .cfer-promo-body { flex: 1; display: flex; flex-direction: column; gap: 0.15em; }
+.cfer-promo-window .cfer-promo-body span { font-size: 0.85em; opacity: 0.8; }
+.cfer-promo-window .cfer-promo-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3em; }
+.cfer-promo-window .cfer-promo-actions button { white-space: nowrap; width: auto; }
+.cfer-promo-window .cfer-promo-note { font-size: 0.8em; opacity: 0.75; text-align: right; }
 /* ============================================================
    D&D Store Generator — Trading Hall accents
    Burgundy awnings, aged gold, deep oak — a market-day cousin

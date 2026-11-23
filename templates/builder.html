@@ -141,6 +141,49 @@
         </div>
       </div>
 
+      <!-- Sibling modules for this game system -->
+      <div class="home-more">
+        <div class="home-tips-header">
+          <i class="fa-solid fa-puzzle-piece"></i>
+          <h3>More modules by Cfer</h3>
+        </div>
+        <p class="home-intro">
+          {{#if hasPromos}}
+          These work alongside <strong>{{module.label}}</strong> and share your Patreon
+          sign-in and monthly uses, so adding one costs nothing extra. Click
+          <em>Copy install link</em>, then in Foundry's setup screen open
+          <em>Add-on Modules</em>, <em>Install Module</em>, and paste it into
+          <em>Manifest URL</em>.
+          {{else}}
+          You already have every Cfer module for this game system. Thank you!
+          {{/if}}
+        </p>
+
+        <div class="home-modules-grid">
+          {{#each homeModules}}
+          <div class="home-module-card {{accentClass}}{{#if isCurrent}} home-module-card--current{{/if}}">
+            <div class="home-module-icon"><i class="{{icon}}"></i></div>
+            <div class="home-module-body">
+              <div class="home-module-title">{{label}}</div>
+              <div class="home-module-desc">{{description}}</div>
+            </div>
+            <div class="home-module-cta">
+              {{#if isCurrent}}
+                <span class="home-module-current-badge"><i class="fa-solid fa-check"></i> You are here</span>
+              {{else if installedInactive}}
+                <span class="home-module-current-badge home-module-current-badge--off"><i class="fa-solid fa-power-off"></i> Installed, enable it in Manage Modules</span>
+              {{else}}
+                <button type="button" class="home-module-install" data-copy-manifest="{{manifest}}">
+                  <i class="fa-solid fa-copy"></i> Copy install link
+                </button>
+                <a href="{{github}}" target="_blank" rel="noopener noreferrer" class="home-module-details">Details</a>
+              {{/if}}
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+
       <!-- Things people miss -->
       <div class="home-tips">
         <div class="home-tips-header">
@@ -162,34 +205,6 @@
             earlier without regenerating it.</li>
           <li><strong>Art style.</strong> Set one below and every portrait follows it.</li>
         </ul>
-      </div>
-
-      <p class="home-intro">
-        You are using <strong>{{module.label}}</strong>. The CferNpcMaker family ships
-        a separate Foundry module for each system so each install only contains the
-        code it needs. Install any of the others to round out your toolset; they share
-        your sign-in and your monthly allowance.
-      </p>
-
-      <div class="home-modules-grid">
-        {{#each homeModules}}
-        <div class="home-module-card {{accentClass}}{{#if isCurrent}} home-module-card--current{{/if}}">
-          <div class="home-module-icon"><i class="{{icon}}"></i></div>
-          <div class="home-module-body">
-            <div class="home-module-title">{{label}}</div>
-            <div class="home-module-desc">{{description}}</div>
-          </div>
-          <div class="home-module-cta">
-            {{#if isCurrent}}
-              <span class="home-module-current-badge"><i class="fa-solid fa-check"></i> Installed</span>
-            {{else}}
-              <a href="{{install}}" target="_blank" rel="noopener noreferrer" class="home-module-install">
-                <i class="fa-brands fa-github"></i> Install
-              </a>
-            {{/if}}
-          </div>
-        </div>
-        {{/each}}
       </div>
 
       <!-- Custom art style -->
@@ -373,6 +388,21 @@
           <span>Undo Last Generation</span>
         </button>
       </div>
+
+      {{#if promoStrip}}
+      <div class="promo-strip">
+        <i class="{{promoStrip.icon}}" aria-hidden="true"></i>
+        <span class="promo-strip-text">
+          <span class="promo-strip-label">Also by Cfer:</span>
+          <strong>{{promoStrip.label}}</strong>. {{promoStrip.pitch}}
+          Uses the same sign-in and allowance.
+        </span>
+        <button type="button" class="link-to-home" data-home-target="home-more">Take a look</button>
+        <button type="button" class="promo-strip-dismiss" title="Hide for 30 days" aria-label="Hide this suggestion for 30 days">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      {{/if}}
     </div>
 
     <!-- Right: history panel -->

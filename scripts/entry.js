@@ -5,6 +5,7 @@
  */
 
 import { openBuilder, ensureBuilder } from './core/app.js';
+import { registerPromoMenu } from './core/promo.js';
 import { checkForModuleUpdate } from './core/update-check.js';
 import { registerSidebar }      from './core/sidebar.js';
 import { startHeartbeat }       from './core/heartbeat.js';
@@ -96,6 +97,7 @@ class ClearSessionMenu extends foundry.applications.api.ApplicationV2 {
 }
 
 Hooks.once('init', () => {
+  registerPromoMenu(MODULE_ID);
   registerStoresTab();
 
   game.settings.register(MODULE_ID, 'devMode', {

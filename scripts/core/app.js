@@ -38,6 +38,11 @@ import { getUsage,
          onUsageChange }          from './usage.js';
 import { ALL_MODULES,
          getModuleMeta }          from './home-data.js';
+import { promoModulesFor,
+         pickStripModule,
+         isStripDismissed,
+         dismissStrip,
+         bindPromoButtons }       from './promo.js';
 import { TIER_PLANS,
          ACTION_COSTS,
          getPlan,
@@ -98,8 +103,9 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /* ── ApplicationV2 wiring ──────────────────────────────── */
 
   async _prepareContext() {
-    const currentId     = this.adapter.module.id;
-    const currentSystem = ALL_MODULES.find(m => m.id === currentId)?.system;
+    const currentId = this.adapter.module.id;
+    const promos    = promoModulesFor({ currentId, systemId: game.system?.id, modules: game.modules });
+    const current   = getModuleMeta(currentId);
     return {
       authenticated: this.authenticated,
       module:        this.adapter.module,
@@ -108,15 +114,9 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
       freePlan:      TIER_PLANS[0],
       actionCosts:   ACTION_COSTS,
       tierPlans:     publicPlans().map(p => ({ ...p, allowance: describeAllowance(p.uses) })),
-      homeModules:   ALL_MODULES
-        .filter(m => {
-          if (m.id === currentId) return true;
-          // Only advertise siblings that target the same Foundry system…
-          if (m.system !== currentSystem) return false;
-          // …and only if the user doesn't already have them installed.
-          return !game.modules?.get(m.id);
-        })
-        .map(m => ({ ...m, isCurrent: m.id === currentId })),
+      homeModules:   [...(current ? [{ ...current, isCurrent: true }] : []), ...promos],
+      hasPromos:     promos.length > 0,
+      promoStrip:    isStripDismissed() ? null : pickStripModule(promos),
     };
   }
 
@@ -196,6 +196,14 @@ export class BuilderApp extends HandlebarsApplicationMixin(ApplicationV2) {
         this._showHomeSection(link.dataset.homeTarget);
       });
     }
+
+    bindPromoButtons(this.element);
+    this.element.querySelector('.promo-strip-dismiss')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      dismissStrip();
+      this.element.querySelector('.promo-strip')?.remove();
+    });
 
     this._initOfflineDetection();
 
